@@ -4,7 +4,9 @@
 [![License](https://poser.pugx.org/slim/slim/license)](https://packagist.org/packages/slim/slim)
 
 This application is built with [SlimPHP](https://www.slimframework.com) 3.x
+
 A skeleton for creating applications with [SlimPHP](https://www.slimframework.com) 3.x.
+
 The framework source code can be found here: [slimphp/Slim](https://github.com/slimphp/Slim).
 
 ## Installation
