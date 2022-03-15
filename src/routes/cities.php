@@ -1,7 +1,7 @@
 <?php
 
-$classname = "UsersController";
-$endpoint  = "users";
+$classname = "CitiesController";
+$endpoint  = "cities";
 
 require_once __DIR__ . "/../controllers/{$classname}.php";
 

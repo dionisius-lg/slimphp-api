@@ -1,7 +1,10 @@
 <?php
 
-require_once __DIR__ .'/../controllers/TokenController.php';
+$classname = "TokenController";
+$endpoint  = "token";
 
-$app->post('/token', '\TokenController:createToken');
+require_once __DIR__ . "/../controllers/{$classname}.php";
 
-$app->get('/token/refresh', '\TokenController:getRefreshToken');
+$app->post("/{$endpoint}", "\\{$classname}:createToken");
+
+$app->get("/{$endpoint}/refresh", "\\{$classname}:getRefreshToken");

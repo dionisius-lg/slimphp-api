@@ -2,12 +2,12 @@
 
 use App\Validator;
 
-class UserLevelsController extends AppController
+class CitiesController extends AppController
 {
 	public function __construct(Slim\Container $ci)
 	{
 		parent::__construct($ci);
-		$this->table = 'user_levels';
+		$this->table = 'cities';
 		$this->jwt = $this->ci->get('globalSettings')['jwt'];
 	}
 
@@ -66,15 +66,11 @@ class UserLevelsController extends AppController
 		];
 
 		$join_column = [
-			"create_users.username AS create_username",
-			"create_users.fullname AS create_fullname",
-			"update_users.username AS update_username",
-			"update_users.fullname AS update_fullname",
+			"provinces.name AS province",
 		];
 
 		$join_table = [
-			"LEFT JOIN users AS create_users ON create_users.id = {$this->table}.create_user_id",
-			"LEFT JOIN users AS update_users ON update_users.id = {$this->table}.update_user_id",
+			"LEFT JOIN provinces ON provinces.id = {$this->table}.province_id",
 		];
 
 		if ((string) (int) $clause['start'] === $clause['start'] && (string) (int) $clause['end'] === $clause['end']) {
@@ -150,15 +146,11 @@ class UserLevelsController extends AppController
 		];
 
 		$join_column = [
-			"create_users.username AS create_username",
-			"create_users.fullname AS create_fullname",
-			"update_users.username AS update_username",
-			"update_users.fullname AS update_fullname",
+			"provinces.name AS province",
 		];
 
 		$join_table = [
-			"LEFT JOIN users AS create_users ON create_users.id = {$this->table}.create_user_id",
-			"LEFT JOIN users AS update_users ON update_users.id = {$this->table}.update_user_id",
+			"LEFT JOIN provinces ON provinces.id = {$this->table}.province_id",
 		];
 
 		$condition = [
@@ -240,7 +232,7 @@ class UserLevelsController extends AppController
 
 		$data_temp = $request->getParsedBody();
 		$column    = $this->checkColumn($this->db['database']['dbname'], $this->table);
-		$protected = ['id', 'update_date', 'update_user_id'];
+		$protected = ['id'];
 		$data      = [];
 
 		if (empty($data_temp)) {
@@ -260,7 +252,7 @@ class UserLevelsController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('UserLevelsSchema', 'create');
+		$validator->set('CitiesSchema', 'create');
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');
@@ -275,14 +267,6 @@ class UserLevelsController extends AppController
 				return $handler($request, $response, 'Name already exist');
 			}
 		}
-
-        if (!array_key_exists('create_date', $data)) {
-            $data['create_date'] = date('Y-m-d H:i:s');
-        }
-
-        if (!array_key_exists('create_user_id', $data)) {
-            $data['create_user_id'] = $decoded['data']['id'];
-        }
 
         $data['is_active'] = 1;
 
@@ -320,7 +304,7 @@ class UserLevelsController extends AppController
 
 		$data_temp = $request->getParsedBody();
 		$column    = $this->checkColumnWithType($this->db['database']['dbname'], $this->table);
-		$protected = ['id', 'update_date', 'update_user_id'];
+		$protected = ['id'];
 		$data      = [];
 
 		if (empty($data_temp)) {
@@ -357,7 +341,7 @@ class UserLevelsController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('UserLevelsSchema', 'create');
+		$validator->set('CitiesSchema', 'create');
 
 		$names = [];
 
@@ -386,14 +370,6 @@ class UserLevelsController extends AppController
 				}
 
 				array_push($names, $data_y['name']);
-			}
-	
-			if (!array_key_exists('create_date', $data_y)) {
-				$data[$y]['create_date'] = date('Y-m-d H:i:s');
-			}
-
-            if (!array_key_exists('create_user_id', $data_y)) {
-				$data[$y]['create_user_id'] = $decoded['data']['id'];
 			}
 		}
 
@@ -441,7 +417,7 @@ class UserLevelsController extends AppController
 		$id        = $args['id'];
 		$data_temp = $request->getParsedBody();
 		$column    = $this->checkColumn($this->db['database']['dbname'], $this->table);
-		$protected = ['id', 'create_date', 'create_user_id'];
+		$protected = ['id'];
 		$data      = [];
 
 		if (empty($data_temp)) {
@@ -461,7 +437,7 @@ class UserLevelsController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('UserLevelsSchema', 'update')->validate($data);
+		$validator->set('CitiesSchema', 'update')->validate($data);
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');
@@ -483,14 +459,6 @@ class UserLevelsController extends AppController
 				return $handler($request, $response, 'Name already exist');
 			}
 		}
-
-		if (!array_key_exists('update_date', $data)) {
-            $data['update_date'] = date('Y-m-d H:i:s');
-        }
-
-        if (!array_key_exists('create_user_id', $data)) {
-            $data['update_user_id'] = $decoded['data']['id'];
-        }
 
 		$updated = $this->parentUpdate($this->table, $data, ['id' => $id]);
 
