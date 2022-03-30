@@ -252,7 +252,7 @@ class ProvincesController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('ProvincesSchema', 'create');
+		$validator->set('Provinces', 'create');
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');
@@ -341,7 +341,7 @@ class ProvincesController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('ProvincesSchema', 'create');
+		$validator->set('Provinces', 'create');
 
 		$names = [];
 
@@ -437,7 +437,7 @@ class ProvincesController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('ProvincesSchema', 'update')->validate($data);
+		$validator->set('Provinces', 'update')->validate($data);
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');

@@ -2,7 +2,7 @@
 
 use App\Validator as AppValidator;
 
-class CitiesSchema extends AppValidator
+class Cities extends AppValidator
 {
 	public function __construct()
 	{

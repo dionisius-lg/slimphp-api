@@ -260,7 +260,7 @@ class UserLevelsController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('UserLevelsSchema', 'create');
+		$validator->set('UserLevels', 'create');
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');
@@ -357,7 +357,7 @@ class UserLevelsController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('UserLevelsSchema', 'create');
+		$validator->set('UserLevels', 'create');
 
 		$names = [];
 
@@ -461,7 +461,7 @@ class UserLevelsController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('UserLevelsSchema', 'update')->validate($data);
+		$validator->set('UserLevels', 'update')->validate($data);
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');

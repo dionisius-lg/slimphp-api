@@ -114,7 +114,7 @@ class AppController
 	/**
 	 *  parentGetAll method
 	 *  get all data from table
-	 *  @param string $table, array $clause, array $condition, array $column, array $join
+	 *  @param string $table, array $clause, array $condition, array $column, array $column_deselect, array $join
 	 *  @return array $result
 	 */
 	public function parentGetAll($table, $clause = [], $condition = [], $column = [], $column_deselect = [], $join = [])

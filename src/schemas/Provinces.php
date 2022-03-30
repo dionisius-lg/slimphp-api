@@ -2,7 +2,7 @@
 
 use App\Validator as AppValidator;
 
-class ProvincesSchema extends AppValidator
+class Provinces extends AppValidator
 {
 	public function __construct()
 	{

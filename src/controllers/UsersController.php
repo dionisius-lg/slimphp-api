@@ -300,7 +300,7 @@ class UsersController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('UsersSchema', 'create');
+		$validator->set('Users', 'create');
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');
@@ -404,7 +404,7 @@ class UsersController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('UsersSchema', 'create');
+		$validator->set('Users', 'create');
 
 		$usernames = [];
 		$emails    = [];
@@ -523,7 +523,7 @@ class UsersController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('UsersSchema', 'update')->validate($data);
+		$validator->set('Users', 'update')->validate($data);
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');

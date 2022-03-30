@@ -252,7 +252,7 @@ class CitiesController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('CitiesSchema', 'create');
+		$validator->set('Cities', 'create');
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');
@@ -341,7 +341,7 @@ class CitiesController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('CitiesSchema', 'create');
+		$validator->set('Cities', 'create');
 
 		$names = [];
 
@@ -437,7 +437,7 @@ class CitiesController extends AppController
 		}
 
 		$validator = new Validator();
-		$validator->set('CitiesSchema', 'update')->validate($data);
+		$validator->set('Cities', 'update')->validate($data);
 
 		if (!$validator->validate($data)) {
 			$handler = $this->ci->get('badRequestHandler');

@@ -2,7 +2,7 @@
 
 use App\Validator as AppValidator;
 
-class UserLevelsSchema extends AppValidator
+class UserLevels extends AppValidator
 {
 	public function __construct()
 	{
