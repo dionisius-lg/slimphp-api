@@ -2,12 +2,12 @@
 
 use App\Validator;
 
-class CitiesController extends AppController
+class ProductCategoriesController extends AppController
 {
     public function __construct(Slim\Container $ci)
     {
         parent::__construct($ci);
-        $this->table = 'cities';
+        $this->table = 'product_categories';
         $this->jwt = $this->ci->get('globalSettings')['jwt'];
     }
 
@@ -66,11 +66,15 @@ class CitiesController extends AppController
         ];
 
         $join_column = [
-            "provinces.name AS province",
+            "create_user.username AS create_username",
+            "create_user.fullname AS create_fullname",
+            "update_user.username AS update_username",
+            "update_user.fullname AS update_fullname",
         ];
 
         $join_table = [
-            "LEFT JOIN provinces ON provinces.id = {$this->table}.province_id",
+            "LEFT JOIN users AS create_user ON create_user.id = {$this->table}.create_user_id",
+            "LEFT JOIN users AS update_user ON update_user.id = {$this->table}.update_user_id",
         ];
 
         if ((string) (int) $clause['start'] === $clause['start'] && (string) (int) $clause['end'] === $clause['end']) {
@@ -146,11 +150,15 @@ class CitiesController extends AppController
         ];
 
         $join_column = [
-            "provinces.name AS province",
+            "create_user.username AS create_username",
+            "create_user.fullname AS create_fullname",
+            "update_user.username AS update_username",
+            "update_user.fullname AS update_fullname",
         ];
 
         $join_table = [
-            "LEFT JOIN provinces ON provinces.id = {$this->table}.province_id",
+            "LEFT JOIN users AS create_user ON create_user.id = {$this->table}.create_user_id",
+            "LEFT JOIN users AS update_user ON update_user.id = {$this->table}.update_user_id",
         ];
 
         $condition = [
@@ -232,7 +240,7 @@ class CitiesController extends AppController
 
         $data_temp = $request->getParsedBody();
         $column    = $this->checkColumn($this->db['database']['dbname'], $this->table);
-        $protected = ['id'];
+        $protected = ['id', 'update_date', 'update_user_id'];
         $data      = [];
 
         if (empty($data_temp)) {
@@ -252,7 +260,7 @@ class CitiesController extends AppController
         }
 
         $validator = new Validator();
-        $validator->set('Cities', 'create');
+        $validator->set('ProductCategories', 'create');
 
         if (!$validator->validate($data)) {
             $handler = $this->ci->get('badRequestHandler');
@@ -266,6 +274,14 @@ class CitiesController extends AppController
                 $handler = $this->ci->get('badRequestHandler');
                 return $handler($request, $response, 'Name already exist');
             }
+        }
+
+        if (!array_key_exists('create_date', $data)) {
+            $data['create_date'] = date('Y-m-d H:i:s');
+        }
+
+        if (!array_key_exists('create_user_id', $data)) {
+            $data['create_user_id'] = $decoded['data']['id'];
         }
 
         $data['is_active'] = 1;
@@ -304,7 +320,7 @@ class CitiesController extends AppController
 
         $data_temp = $request->getParsedBody();
         $column    = $this->checkColumnWithType($this->db['database']['dbname'], $this->table);
-        $protected = ['id'];
+        $protected = ['id', 'update_date', 'update_user_id'];
         $data      = [];
 
         if (empty($data_temp)) {
@@ -341,7 +357,7 @@ class CitiesController extends AppController
         }
 
         $validator = new Validator();
-        $validator->set('Cities', 'create');
+        $validator->set('ProductCategories', 'create');
 
         $names = [];
 
@@ -370,6 +386,14 @@ class CitiesController extends AppController
                 }
 
                 array_push($names, $data_y['name']);
+            }
+
+            if (!array_key_exists('create_date', $data_y)) {
+                $data[$y]['create_date'] = date('Y-m-d H:i:s');
+            }
+
+            if (!array_key_exists('create_user_id', $data_y)) {
+                $data[$y]['create_user_id'] = $decoded['data']['id'];
             }
         }
 
@@ -417,7 +441,7 @@ class CitiesController extends AppController
         $id        = $args['id'];
         $data_temp = $request->getParsedBody();
         $column    = $this->checkColumn($this->db['database']['dbname'], $this->table);
-        $protected = ['id'];
+        $protected = ['id', 'create_date', 'create_user_id'];
         $data      = [];
 
         if (empty($data_temp)) {
@@ -437,9 +461,10 @@ class CitiesController extends AppController
         }
 
         $validator = new Validator();
-        $validator->set('Cities', 'update')->validate($data);
+        $validator->set('ProductCategories', 'update')->validate($data);
 
         if (!$validator->validate($data)) {
+            print_r($validator->getErrors()); exit;
             $handler = $this->ci->get('badRequestHandler');
             return $handler($request, $response, $validator->getErrors()[0]);
         }
@@ -458,6 +483,14 @@ class CitiesController extends AppController
                 $handler = $this->ci->get('badRequestHandler');
                 return $handler($request, $response, 'Name already exist');
             }
+        }
+
+        if (!array_key_exists('update_date', $data)) {
+            $data['update_date'] = date('Y-m-d H:i:s');
+        }
+
+        if (!array_key_exists('update_user_id', $data)) {
+            $data['update_user_id'] = $decoded['data']['id'];
         }
 
         $updated = $this->parentUpdate($this->table, $data, ['id' => $id]);

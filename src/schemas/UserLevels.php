@@ -4,24 +4,24 @@ use App\Validator as AppValidator;
 
 class UserLevels extends AppValidator
 {
-	public function __construct()
-	{
-		parent::__construct();
-	}
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
     /**
-	 *  create method
-	 *  validate create data
-	 */
-	public function create()
-	{
+     *  create method
+     *  validate create data
+     */
+    public function create()
+    {
         return [
             "type" => "object",
             "properties" => [
                 "name" => [
                     "type" => "string",
-                    "minLength" => 4,
-                    "maxLength" => 40,
+                    "minLength" => 1,
+                    "maxLength" => 100,
                     "required" => true
                 ],
                 "create_date" => [
@@ -36,7 +36,7 @@ class UserLevels extends AppValidator
                     "oneOf" => [
                         [
                             "type" => "string",
-                            "enum" => ["0", "1"]
+                            "enum" => [0, 1]
                         ],
                         [
                             "type" => "integer",
@@ -49,18 +49,18 @@ class UserLevels extends AppValidator
     }
 
     /**
-	 *  update method
-	 *  validate update data
-	 */
-	public function update()
-	{
+     *  update method
+     *  validate update data
+     */
+    public function update()
+    {
         return [
             "type" => "object",
             "properties" => [
                 "name" => [
                     "type" => "string",
-                    "minLength" => 4,
-                    "maxLength" => 40,
+                    "minLength" => 1,
+                    "maxLength" => 100,
                     "required" => true
                 ],
                 "update_date" => [
@@ -75,7 +75,7 @@ class UserLevels extends AppValidator
                     "oneOf" => [
                         [
                             "type" => "string",
-                            "enum" => ["0", "1"]
+                            "enum" => [0, 1]
                         ],
                         [
                             "type" => "integer",

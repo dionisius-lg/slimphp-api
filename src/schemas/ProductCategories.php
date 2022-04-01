@@ -2,7 +2,7 @@
 
 use App\Validator as AppValidator;
 
-class Cities extends AppValidator
+class ProductCategories extends AppValidator
 {
     public function __construct()
     {
@@ -24,16 +24,19 @@ class Cities extends AppValidator
                     "maxLength" => 100,
                     "required" => true
                 ],
-                "province_id" => [
+                "create_date" => [
+                    "type" => "string",
+                    "format" => "datetime"
+                ],
+                "create_user_id" => [
                     "type" => "integer",
-                    "minLength" => 1,
-                    "required" => true
+                    "minimum" => 1
                 ],
                 "is_active" => [
                     "oneOf" => [
                         [
                             "type" => "string",
-                            "enum" => ["0", "1"]
+                            "enum" => [0, 1]
                         ],
                         [
                             "type" => "integer",
@@ -60,16 +63,19 @@ class Cities extends AppValidator
                     "maxLength" => 100,
                     "required" => true
                 ],
-                "province_id" => [
+                "update_date" => [
+                    "type" => "string",
+                    "format" => "datetime"
+                ],
+                "update_user_id" => [
                     "type" => "integer",
-                    "minLength" => 1,
-                    "required" => true
+                    "minimum" => 1
                 ],
                 "is_active" => [
                     "oneOf" => [
                         [
                             "type" => "string",
-                            "enum" => ["0", "1"]
+                            "enum" => [0, 1]
                         ],
                         [
                             "type" => "integer",

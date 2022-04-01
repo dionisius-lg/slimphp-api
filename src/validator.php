@@ -14,9 +14,9 @@ class Validator
     protected $errors;
 
     /**
-	 *  __construct method
-	 *  variable initialization
-	 */
+     *  __construct method
+     *  variable initialization
+     */
     public function __construct()
     {
         $this->schema = false;
@@ -25,11 +25,11 @@ class Validator
     }
 
     /**
-	 *  set method
-	 *  set validation schema
-	 *  @param boolean $getSchema, boolean $getMethod
-	 *  @return array $schema
-	 */
+     *  set method
+     *  set validation schema
+     *  @param boolean $getSchema, boolean $getMethod
+     *  @return array $schema
+     */
     public function set($getSchema = false, $getMethod = false)
     {
         if ($getSchema && $getMethod) {
@@ -53,11 +53,11 @@ class Validator
     }
 
     /**
-	 *  validate method
-	 *  validate data
-	 *  @param array $data
-	 *  @return boolean $valid
-	 */
+     *  validate method
+     *  validate data
+     *  @param array $data
+     *  @return boolean $valid
+     */
     public function validate($data = [])
     {
         $validator = new JsonValidator();
@@ -97,18 +97,18 @@ class Validator
     }
 
     /**
-	 *  isValid method
-	 *  @return boolean $valid
-	 */
+     *  isValid method
+     *  @return boolean $valid
+     */
     public function isValid()
     {
         return $this->valid;
     }
 
     /**
-	 *  getErrors method
-	 *  @return array $errors
-	 */
+     *  getErrors method
+     *  @return array $errors
+     */
     public function getErrors()
     {
         return $this->errors;

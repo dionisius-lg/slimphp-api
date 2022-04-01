@@ -4,17 +4,17 @@ use App\Validator as AppValidator;
 
 class Users extends AppValidator
 {
-	public function __construct()
-	{
-		parent::__construct();
-	}
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
     /**
-	 *  create method
-	 *  validate create data
-	 */
-	public function create()
-	{
+     *  create method
+     *  validate create data
+     */
+    public function create()
+    {
         return [
             "type" => "object",
             "properties" => [
@@ -60,11 +60,11 @@ class Users extends AppValidator
     }
 
     /**
-	 *  update method
-	 *  validate update data
-	 */
-	public function update()
-	{
+     *  update method
+     *  validate update data
+     */
+    public function update()
+    {
         return [
             "type" => "object",
             "properties" => [
