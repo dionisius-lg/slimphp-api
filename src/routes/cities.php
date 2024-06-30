@@ -1,14 +1,48 @@
 <?php
 
-$pathname   = basename(__FILE__, '.php');
-$controller = camelcase($pathname, true) . 'Controller';
-$schema     = camelcase($pathname, true) . 'Schema';
+$path = pathinfo(basename(__FILE__), PATHINFO_FILENAME);
+$controller = camelcase($path, true) . 'Controller';
+$schema = camelcase($path, true) . 'Schema';
 
 require_once __DIR__ . "/../controllers/{$controller}.php";
 require_once __DIR__ . "/../schemas/{$schema}.php";
 
-$app->get("/{$pathname}", "\\{$controller}:getAll")
+$app->get("/{$path}", "\\{$controller}:getAll")
+    // auth token
     ->add($authenticate);
 
-$app->get("/{$pathname}/{id:[0-9]+}", "\\{$controller}:getDetail")
-    ->add($authenticate);
+$app->get("/{$path}/{id}", "\\{$controller}:getDetail")
+    // auth token
+    ->add($authenticate)
+    // validate request body
+    ->add($validation($schema::detail(), 'params'));
+
+$app->post("/{$path}", "\\{$controller}:insert")
+    // auth token
+    ->add($authenticate)
+    // validate request body
+    ->add($validation($schema::insert(), 'body'));
+
+$app->put("/{$path}/{id}", "\\{$controller}:update")
+    // auth token
+    ->add($authenticate)
+    // validate request body
+    ->add($validation($schema::update(), 'body'));
+
+$app->delete("/{$path}/{id}", "\\{$controller}:delete")
+    // auth token
+    ->add($authenticate)
+    // validate request body
+    ->add($validation($schema::detail(), 'params'));
+
+$app->post("/{$path}/many", "\\{$controller}:insertMany")
+    // auth token
+    ->add($authenticate)
+    // validate request body
+    ->add($validation($schema::insertMany(), 'body'));
+
+$app->post("/{$path}/many/update", "\\{$controller}:insertManyUpdate")
+    // auth token
+    ->add($authenticate)
+    // validate request body
+    ->add($validation($schema::insertManyUpdate(), 'body'));

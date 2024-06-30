@@ -1,183 +1,235 @@
 <?php
 
-use Psr\Container\ContainerInterface;
-use Firebase\JWT\JWT as Jwt;
-use Firebase\JWT\Key as JwtKey;
+use \Psr\Container\ContainerInterface as Container;
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
+use \Firebase\JWT\JWT as Jwt;
+use \Firebase\JWT\Key as Key;
 
-class TokenController extends ApiController
-{
+class TokenController extends Controller {
+
     /**
-     *  __construct method
      *  variable initialization
-     *  @param ContainerInterface $ci
+     *  @param {Container} $cont
      */
-    public function __construct(ContainerInterface $ci)
-    {
-        parent::__construct($ci);
+    public function __construct(Container $cont) {
+        parent::__construct($cont);
         $this->table = 'users';
-        $this->table_refresh = 'refresh_tokens';
-        $this->jwt = $this->conf['jwt'];
+        $this->table_refresh_tokens = 'refresh_tokens';
     }
 
     /**
-     *  generate method
-     *  generate token by given auth
+     *  create new token
+     *  @param {array} $data
+     *  @return {array} $result
      */
-    public function generate($request, $response)
-    {
-        $body = $request->getParsedBody();
-        $required = ['username', 'password'];
+    private function createToken($data) {
+        if (is_array_assoc($data)) {
+            $issued_at = time();
+            $token_id = base64_encode(mcrypt_create_iv(32));
+            $server_name = $_SERVER['REMOTE_ADDR'];
+            $not_before = $issued_at + $this->conf['jwt']['live'];
+            $expire = $not_before + $this->conf['jwt']['expire'];
+            $client_ip = client_ip();
+            $user_agent = 'unknown';
 
-        if (array_diff($required, array_keys($body)) == array_diff(array_keys($body), $required)) {
-            $query = "SELECT * FROM {$this->table} WHERE username = :username AND is_active = :is_active LIMIT 1";
-
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(':username', $body['username'], PDO::PARAM_STR);
-            $stmt->bindValue(':is_active', '1', PDO::PARAM_INT);
-            $stmt->execute();
-
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            $generated = false;
-
-            if (!$user) {
-                $handler = $this->ci->get('notFoundHandler');
-                return $handler($request, $response);
+            if (isset($_SERVER['HTTP_USER_AGENT'])) {
+                $user_agent = $_SERVER['HTTP_USER_AGENT'];
             }
 
-            if (password_verify($body['password'], $user['password'])) {
-                $generated = $this->generateToken($user);
+            $payload = [
+                'iat' => $issued_at, // Issued at: time when the token was generated
+                'jti' => $token_id, // Json Token Id: an unique identifier for the token
+                'iss' => $server_name, // Issuer
+                'aud' => $client_ip, // Audience
+                'nbf' => $not_before, // Not before
+                'exp' => $expire, // Expire
+                'data' => [ // Data related to the signer user
+                    'id' => $data['id'],
+                    'client_ip' => $client_ip,
+                    'user_agent' => $user_agent,
+                ]
+            ];
 
-                if ($generated) {
-                    $user_agent = 'unknown';
+            $encoded = Jwt::encode($payload, $this->conf['jwt']['key'], $this->conf['jwt']['algorithm']);
+            $refresh_encoded = $this->refreshToken($payload['data']);
 
-                    if (isset($_SERVER['HTTP_USER_AGENT'])) {
-                        $user_agent = $_SERVER['HTTP_USER_AGENT'];
-                    }
+            if ($refresh_encoded) {
+                $result = [
+                    'id' => $data['id'],
+                    'token' => $encoded,
+                    'token_expire' => date('Y-m-d H:i:s', $expire),
+                    'refresh_token' => $refresh_encoded['token'],
+                    'refresh_token_expire' => date('Y-m-d H:i:s', $refresh_encoded['expire'])
+                ];
 
-                    $data_refresh = [
-                        'user_id'    => $user['id'],
-                        'user_agent' => $user_agent,
-                        'ip_address' => client_ip(),
-                        'token'      => $generated['token'],
-                        'expired'    => $generated['token_expire'],
-                        'updated'    => date('Y-m-d H:i:s'),
-                    ];
-
-                    $inserted = $this->insertDuplicateUpdateData($this->table_refresh, [$data_refresh]);
-
-                    if ($inserted) {
-                        $handler = $this->ci->get('successHandler');
-                        return $handler($request, $response, ['total' => 1, 'data' => $generated]);
-                    }
-                }
+                return $result;
             }
-
-            $handler = $this->ci->get('unauthorizedHandler');
-            return $handler($request, $response);
         }
 
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        return false;
     }
 
     /**
-     *  refresh method
+     *  refresh token
+     *  @param {array} $data
+     *  @return {array} $result
+     */
+    private function refreshToken($data) {
+        if (is_array_assoc($data)) {
+            $issued_at = time();
+            $token_id = base64_encode(mcrypt_create_iv(32));
+            $server_name = $_SERVER['REMOTE_ADDR'];
+            $not_before = $issued_at + $this->conf['jwt']['live'];
+            $expire = $not_before + $this->conf['jwt']['refresh_expire'];
+
+            $payload = [
+                'iat' => $issued_at, // Issued at: time when the token was generated
+                'jti' => $token_id, // Json Token Id: an unique identifier for the token
+                'iss' => $server_name, // Issuer
+                'aud' => client_ip(), // Audience
+                'nbf' => $not_before, // Not before
+                'exp' => $expire, // Expire
+                'data' => $data // Data related to the signer user
+            ];
+
+            $encoded = Jwt::encode($payload, $this->conf['jwt']['refresh_key'], $this->conf['jwt']['algorithm']);
+
+            $result = [
+                'token' => $encoded,
+                'expire' => $expire
+            ];
+
+            return $result;
+        }
+
+        return false;
+    }
+
+    /**
+     *  validate auth request
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
+     */
+    public function auth(Request $req, Response $res) {
+        $data = $req->getParsedBody();
+
+        $user = $this->dbGetDetail($this->table, [
+            'username' => $data['username'],
+            'is_active' => 1
+        ]);
+
+        if ($user['total_data'] == 0) {
+            $handler = $this->cont->get('unauthorizedHandler');
+            return $handler($req, $res, 'Username not found');
+        }
+
+        if (password_verify($data['password'], $user['data']['password'])) {
+            $data = $this->createToken($user['data']);
+
+            if ($data) {
+                $user_agent = 'unknown';
+
+                if (isset($_SERVER['HTTP_USER_AGENT'])) {
+                    $user_agent = $_SERVER['HTTP_USER_AGENT'];
+                }
+
+                $refresh_token_data = [
+                    'user_id' => $user['data']['id'],
+                    'user_agent' => $user_agent,
+                    'ip_address' => client_ip(),
+                    'token' => $data['token'],
+                    'expired' => $data['token_expire']
+                ];
+
+                $this->dbInsertManyUpdate($this->table_refresh_tokens, [$refresh_token_data]);
+
+                $handler = $this->cont->get('successHandler');
+                return $handler($req, $res, ['total_data' => 1, 'data' => $data]);
+            }
+        }
+
+        $handler = $this->cont->get('unauthorizedHandler');
+        return $handler($req, $res);
+    }
+
+    /**
      *  refresh token by given auth
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
      */
-    public function refresh($request, $response)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
-        $required = ['token'];
+    public function refreshAuth(Request $req, Response $res) {
+        $decoded = $req->getAttribute('decoded');
+        $token = $req->getParsedBody()['token'];
+        $token_decoded = [];
 
-        if (array_diff($required, array_keys($body)) == array_diff(array_keys($body), $required)) {
-            $token = false;
+        try {
+            $token_decoded = Jwt::decode($token, new Key($this->conf['jwt']['key'], $this->conf['jwt']['algorithm']));
+            $token_decoded = object2array($token_decoded);
+        } catch (Exception $e) {
+            $error = $e->getMessage();
 
-            try {
-                $token = Jwt::decode(
-                    // Token to be decoded in the JWT
-                    $token,
-                    // The signing key & algorithm used to sign the token,
-                    // see https://tools.ietf.org/html/draft-ietf-jose-json-web-algorithms-40#section-3
-                    new JwtKey($config['jwt']['key'], $config['jwt']['algorithm'])
-                );
+            if ($error == 'Expired token') {
+                $token_list = explode(".", $token);
 
-                $token = object2array($token);
-            } catch (Exception $e) {
-                if ($e->getMessage() == "Expired token") {
-                    list($header, $token, $signature) = explode(".", $body['token']);
-                    $token = json_decode(base64_decode($token));
-                    $token = object2array($token);
+                if (count($token_list) === 3) {
+                    list($header, $user_token, $signature) = $token_list;
+                    $token_decoded = json_decode(base64_decode($user_token));
+                    $token_decoded = object2array($token_decoded);
                 }
-            }
-
-            if ($token) {
-                if ($token['data']['id'] !== $decoded['id'] || $token['data']['client_ip'] !== $decoded['client_ip']) {
-                    $handler = $this->ci->get('unauthorizedHandler');
-                    return $handler($request, $response);
-                }
-
-                $query = "SELECT * FROM {$this->table} WHERE id = :id AND is_active = :is_active";
-
-                $stmt = $this->conn->prepare($query);
-                $stmt->bindValue(':username', $token['data']['id'], PDO::PARAM_INT);
-                $stmt->bindValue(':is_active', '1', PDO::PARAM_INT);
-                $stmt->execute();
-
-                $user = [
-                    'total' => $stmt->rowCount(),
-                    'data' => $stmt->fetch(PDO::FETCH_ASSOC)
-                ];
-
-                $query = "SELECT * FROM {$this->table_refresh} WHERE user_id = :user_id AND token = :token";
-
-                $stmt = $this->conn->prepare($query);
-                $stmt->bindValue(':user_id', $token['data']['id'], PDO::PARAM_INT);
-                $stmt->bindValue(':token', $body['token'], PDO::PARAM_STR);
-                $stmt->execute();
-
-                $refresh_token = [
-                    'total' => $stmt->rowCount(),
-                    'data' => $stmt->fetch(PDO::FETCH_ASSOC)
-                ];
-
-                if ($user['total'] == 0 || $refresh_token['total'] == 0) {
-                    $handler = $this->ci->get('unauthorizedHandler');
-                    return $handler($request, $response);
-                }
-
-                $generated = $this->generateToken($user);
-
-                if ($generated) {
-                    $user_agent = 'unknown';
-
-                    if (isset($_SERVER['HTTP_USER_AGENT'])) {
-                        $user_agent = $_SERVER['HTTP_USER_AGENT'];
-                    }
-
-                    $data_refresh = [
-                        'user_id'    => $user['data']['id'],
-                        'ip_address' => client_ip(),
-                        'user_agent' => $user_agent,
-                        'token'      => $generated['token'],
-                        'expired'    => $generated['token_expire'],
-                        'updated'    => date('Y-m-d H:i:s'),
-                    ];
-
-                    $inserted = $this->insertDuplicateUpdateData($this->table_refresh, [$data_refresh]);
-
-                    if ($inserted) {
-                        $handler = $this->ci->get('successHandler');
-                        return $handler($request, $response, ['total' => 1, 'data' => $generated]);
-                    }
-                }
-
-                $handler = $this->ci->get('unauthorizedHandler');
-                return $handler($request, $response);
             }
         }
 
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        if (!array_key_exists('data', $token_decoded)) {
+            $handler = $this->cont->get('unauthorizedHandler');
+            return $handler($req, $res);
+        }
+
+        if ($decoded != $token_decoded['data']) {
+            $handler = $this->cont->get('unauthorizedHandler');
+            return $handler($req, $res);
+        }
+
+        $user = $this->dbGetDetail($this->table, [
+            'id' => $decoded['id'],
+            'is_active' => 1
+        ]);
+
+        $refresh_token = $this->dbGetDetail($this->table_refresh_tokens, [
+            'user_id' => $decoded['id'],
+            'token' => $token
+        ]);
+
+        if ($user['total_data'] == 0 || $refresh_token['total_data'] == 0) {
+            $handler = $this->cont->get('unauthorizedHandler');
+            return $handler($req, $res);
+        }
+
+        $data = $this->createToken($user['data']);
+
+        if ($data) {
+            $user_agent = 'unknown';
+
+            if (isset($_SERVER['HTTP_USER_AGENT'])) {
+                $user_agent = $_SERVER['HTTP_USER_AGENT'];
+            }
+
+            $refresh_token_data = [
+                'user_id' => $user['data']['id'],
+                'user_agent' => $user_agent,
+                'ip_address' => client_ip(),
+                'token' => $data['token'],
+                'expired' => $data['token_expire']
+            ];
+
+            $this->dbInsertManyUpdate($this->table_refresh_tokens, [$refresh_token_data]);
+
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, ['total_data' => 1, 'data' => $data]);
+        }
+
+        $handler = $this->cont->get('unauthorizedHandler');
+        return $handler($req, $res);
     }
+
 }

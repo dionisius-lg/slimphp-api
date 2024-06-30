@@ -1,294 +1,235 @@
 <?php
 
-use Psr\Container\ContainerInterface;
+use \Psr\Container\ContainerInterface as Container;
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
 
-class ProductCategoriesController extends ApiController
-{
+class ProductCategoriesController extends Controller {
+
     /**
-     *  __construct method
      *  variable initialization
-     *  @param ContainerInterface $ci
+     *  @param {Container} $cont
      */
-    public function __construct(ContainerInterface $ci)
-    {
-        parent::__construct($ci);
+    public function __construct(Container $cont)  {
+        parent::__construct($cont);
         $this->table = 'product_categories';
     }
 
     /**
-     *  getAll method
      *  get all data
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
      */
-    public function getAll($request, $response)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $condition_custom = [];
-        $condition = array_merge(['limit' => 20], $request->getQueryParams());
+    public function getAll(Request $req, Response $res) {
+        $conditions = $req->getQueryParams();
+        $custom_conditions = $column_select = $column_deselect = $custom_columns = $join = $group_by = $custom_orders = [];
 
-        $column_select = [
-
-        ];
-
-        $column_deselect = [
-
-        ];
-
-        $column_custom = [
-
-        ];
-
-        $join = [
-
-        ];
-
-        $group_by = [
-
-        ];
-
-        $order_custom = [
-
-        ];
-
-        if (array_key_exists('xxx_id', $condition)) {
-            if (is_numeric($condition['xxx_id'])) {
-                array_push($condition_custom, "{$this->table}.id <> {$condition['xxx_id']}");
-            }
-
-            unset($condition['xxx_id']);
-        }
-
-        if (array_key_exists('start', $condition)) {
-            if ((string) (int) $condition['start'] === $condition['start']) {
-                $start = date('Y-m-d', $condition['start']);
+        if (array_key_exists('start', $conditions)) {
+            if ((string) (int) $conditions['start'] === $conditions['start']) {
+                $start = date('Y-m-d', $conditions['start']);
                 $end = $start;
 
-                if (array_key_exists('end', $condition)) {
-                    if ((string) (int) $condition['end'] === $condition['end']) {
-                        $end = date('Y-m-d', $condition['end']);
+                if (array_key_exists('end', $conditions)) {
+                    if ((string) (int) $conditions['end'] === $conditions['end']) {
+                        $end = date('Y-m-d', $conditions['end']);
                     }
 
-                    unset($condition['end']);
+                    unset($conditions['end']);
                 }
 
-                array_push($condition_custom, "DATE({$this->table}.created) BETWEEN '{$start}' AND '{$end}'");
-                unset($condition['start']);
+                array_push($custom_conditions, "DATE({$this->table}.created) BETWEEN '{$start}' AND '{$end}'");
+                unset($conditions['start']);
             }
         }
 
-        if (array_key_exists('name', $condition)) {
-            if (!empty($condition['name'])) {
-                array_push($condition_custom, "{$this->table}.name LIKE '%{$condition['name']}%'");
-            }
-
-            unset($condition['name']);
-        }
- 
-        $result = $this->getData($this->table, $condition, $condition_custom, $column_select, $column_deselect, $column_custom, $join, $group_by, $order_custom);
-
-        if ($result['total'] > 0) {
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        if (array_key_exists('name', $conditions)) {
+            array_push($custom_conditions, "{$this->table}.name LIKE '%{$conditions['name']}%'");
+            unset($conditions['name']);
         }
 
-        $handler = $this->ci->get('notFoundHandler');
-        return $handler($request, $response);
+        $result = $this->dbGetAll($this->table, $conditions, $custom_conditions, $column_select, $column_deselect, $custom_columns, $join, $group_by, $custom_orders);
+
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, $result);
+        }
+
+        $handler = $this->cont->get('notFoundHandler');
+        return $handler($req, $res);
     }
 
     /**
-     *  getDetail method
-     *  get detail data
+     *  get detail data by given arguments
+     *  @param {Request} $req, {Response} $res, {array} $args
+     *  @return {array} $handler
      */
-    public function getDetail($request, $response, $args)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $condition_custom = [];
-        $condition = array_merge(['limit' => 1], $args);
+    public function getDetail(Request $req, Response $res, $args) {
+        $conditions = $args;
+        $custom_conditions = $column_select = $column_deselect = $custom_columns = $join = [];
 
-        $column_select = [
-
-        ];
-
-        $column_deselect = [
-
-        ];
-
-        $column_custom = [
-
-        ];
-
-        $join = [
-
-        ];
-
-        $group_by = [
-
-        ];
-
-        $order_custom = [
-
-        ];
-
-        $result = $this->getData($this->table, $condition, $condition_custom, $column_select, $column_deselect, $column_custom, $join, $group_by, $order_custom);
-
-        if ($result['total'] > 0) {
-            $result['data'] = $result['data'][0];
-            
-            if (array_key_exists('paging', $result)) {
-                unset($result['paging']);
-            }
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        if (empty($conditions)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res);
         }
 
-        $handler = $this->ci->get('notFoundHandler');
-        return $handler($request, $response);
+        $result = $this->dbGetDetail($this->table, $conditions, $custom_conditions, $column_select, $column_deselect, $custom_columns, $join);
+
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, $result);
+        }
+
+        $handler = $this->cont->get('notFoundHandler');
+        return $handler($req, $res);
     }
 
     /**
-     *  insert method
      *  insert new data
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
      */
-    public function insert($request, $response)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
+    public function insert(Request $req, Response $res) {
+        $decoded = $req->getAttribute('decoded');
+        $data = $req->getParsedBody();
         $protected = ['id'];
 
-        if (array_key_exists('name', $body)) {
-            $check = $this->checkData($this->table, ['name' => $body['name']]);
+        // check available name
+        $count = $this->dbCount($this->table, ['name' => $data['name']]);
 
-            if ($check > 0) {
-                $handler = $this->ci->get('badRequestHandler');
-                return $handler($request, $response, 'Name already exist');
+        if ($count > 0) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Name already exist');
+        }
+
+        if (!array_key_exists('created', $data)) {
+            $data['created'] = date('Y-m-d H:i:s');
+        }
+
+        if (!array_key_exists('created_by', $data)) {
+            $data['created_by'] = $decoded['id'];
+        }
+
+        $result = $this->dbInsert($this->table, $data, $protected);
+
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successCreatedHandler');
+            return $handler($req, $res, $result);
+        }
+
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
+    }
+
+    /**
+     *  update existing data by given arguments
+     *  @param {Request} $req, {Response} $res, {array} $args
+     *  @return {array} $handler
+     */
+    public function update(Request $req, Response $res, $args) {
+        $decoded = $req->getAttribute('decoded');
+        $data = $req->getParsedBody();
+        $conditions = $args;
+        $protected = ['id'];
+
+        if (empty($conditions)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res);
+        }
+
+        if (array_key_exists('id', $conditions)) {
+            // check exist data
+            $count = $this->dbCount($this->table, ['id' => $conditions['id']]);
+
+            if ($count == 0) {
+                $handler = $this->cont->get('notFoundHandler');
+                return $handler($req, $res);
+            }
+
+            if (array_key_exists('name', $data)) {
+                // check available name
+                $count = $this->dbCount($this->table, [], ["name {$data['name']}", "id <> {$conditions['id']}"]);
+    
+                if ($count > 0) {
+                    $handler = $this->cont->get('badRequestHandler');
+                    return $handler($req, $res, 'Name already exist');
+                }
             }
         }
 
-        if (!array_key_exists('created', $body)) {
-            $body['created'] = date('Y-m-d H:i:s');
+        if (!array_key_exists('updated', $data)) {
+            $data['updated'] = date('Y-m-d H:i:s');
         }
 
-        if (!array_key_exists('created_by', $body)) {
-            $body['created_by'] = $decoded['id'];
+        if (!array_key_exists('updated_by', $data)) {
+            $data['updated_by'] = $decoded['id'];
         }
 
-        $inserted = $this->insertData($this->table, $body, $protected);
+        $result = $this->dbUpdate($this->table, $data, $conditions, $protected);
 
-        if ($inserted) {
-            $result = [
-                'code'   => 201,
-                'total'  => 1,
-                'data'   => ['id' => $this->conn->lastInsertId()],
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, $result);
         }
 
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
     }
 
     /**
-     *  update method
-     *  update existing data by given id
+     *  delete existing data by given arguments
+     *  @param {Request} $req, {Response} $res, {array} $args
+     *  @return {array} $handler
      */
-    public function update($request, $response, $args)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
-        $protected = ['id'];
+    public function delete(Request $req, Response $res, $args) {
+        $decoded = $req->getAttribute('decoded');
+        $data = $req->getParsedBody();
 
-        $check = $this->checkData($this->table, ['id' => $args['id']]);
-
-        if ($check == 0) {
-            $handler = $this->ci->get('notFoundHandler');
-            return $handler($request, $response);
+        if (empty($args)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res);
         }
 
-        if (array_key_exists('name', $body)) {
-            $check = $this->checkData($this->table, ['name' => $body['name'], 'xxx_id' => $args['id']]);
+        $conditions = [];
 
-            if ($check > 0) {
-                $handler = $this->ci->get('badRequestHandler');
-                return $handler($request, $response, 'Name already exist');
-            }
+        foreach ($args as $key => $val) {
+            $conditions[$key] = $val;
         }
 
-        if (!array_key_exists('updated', $body)) {
-            $body['updated'] = date('Y-m-d H:i:s');
+        $result = $this->dbDelete($this->table, $conditions);
+
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, $result);
         }
 
-        if (!array_key_exists('updated_by', $body)) {
-            $body['updated_by'] = $decoded['id'];
-        }
-
-        $updated = $this->updateData($this->table, $body, ['id' => $args['id']], $protected);
-
-        if ($updated) {
-            $result = [
-                'total' => 1,
-                'data'  => ['id' => $args['id']],
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
-        }
-
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
     }
 
     /**
-     *  delete method
-     *  delete existing data by given id
+     *  insert new multiple data
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
      */
-    public function delete($request, $response, $args)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
+    public function insertMany(Request $req, Response $res) {
+        $decoded = $req->getAttribute('decoded');
+        $body = $req->getParsedBody();
+        $protected = [];
 
-        $check = $this->checkData($this->table, ['id' => $args['id']]);
-
-        if ($check == 0) {
-            $handler = $this->ci->get('notFoundHandler');
-            return $handler($request, $response);
+        if (!is_array_multi($body)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Invalid data');
         }
-
-        $deleted = $this->deleteData($this->table, ['id' => $args['id']]);
-
-        if ($deleted) {
-            $result = [
-                'total' => 1,
-                'data'  => ['id' => $args['id']],
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
-        }
-
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
-    }
-
-    /**
-     *  insertMany method
-     *  insert new many data
-     */
-    public function insertMany($request, $response)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
-        $protected = ['id'];
 
         $data = [];
         $names = [];
 
         for ($i = 0; $i < count($body); $i++) {
             if (array_key_exists('name', $body[$i]) && !empty($body[$i]['name'])) {
-                $check = $this->checkData($this->table, ['name' => $body[$i]['name']]);
+                // check available name
+                $count = $this->dbCount($this->table, ['name' => $body[$i]['name']]);
 
-                if ($check > 0 || in_array($body[$i]['name'], $names)) {
+                if ($count > 0 || in_array($body[$i]['name'], $names)) {
                     continue;
                 }
 
@@ -307,49 +248,38 @@ class ProductCategoriesController extends ApiController
         }
 
         if (empty($data)) {
-            $handler = $this->ci->get('badRequestHandler');
-            return $handler($request, $response, 'Empty data');
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Invalid data');
         }
 
-        $inserted = $this->insertManyData($this->table, $data, $protected);
+        $result = $this->dbInsertMany($this->table, $data, $protected);
 
-        if ($inserted) {
-            $inserted_min = $this->conn->lastInsertId();
-            $inserted_max = $inserted + $inserted_min;
-            $inserted_ids = [];
-
-            for ($j = $inserted_min; $j < $inserted_max; $j++) {
-                array_push($inserted_ids, ['id' => (string) $j]);
-            }
-
-            $result = [
-                'code'   => 201,
-                'total'  => count($inserted_ids),
-                'data'   => $inserted_ids,
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successCreatedHandler');
+            return $handler($req, $res, $result);
         }
 
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
     }
 
     /**
-     *  insertManyUpdate method
-     *  insert many on duplicate update data
+     *  insert new multiple data update on duplicate
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
      */
-    public function insertManyUpdate($request, $response)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
+    public function insertManyUpdate(Request $req, Response $res) {
+        $decoded = $req->getAttribute('decoded');
+        $body = $req->getParsedBody();
         $protected = [];
-        $master_column = $this->checkColumnDetail($this->conf['database']['dbname'], $this->table);
 
-        $unique = null;
-        $data = [];
-        $names = [];
+        if (!is_array_multi($body)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Invalid data');
+        }
+
+        $master_column = $this->dbColumnDetail($this->table);
+        $unique_key = null;
 
         foreach ($master_column as $key => $val) {
             if (($val['column_key'] === 'PRI' || $val['column_key'] === 'UNI') && !in_array($key, $protected)) {
@@ -358,15 +288,21 @@ class ProductCategoriesController extends ApiController
             }
         }
 
+        $data = [];
+        $names = [];
+
         for ($i = 0; $i < count($body); $i++) {
-            if (array_key_exists('name', $body[$i]) && !empty($body[$i]['name']) && array_key_exists($unique, $body[$i])) {
-                $check = $this->checkData($this->table, ['name' => $body[$i]['name'], 'xxx_' . $unique => $body[$i][$unique]]);
+            if (array_key_exists($unique_key, $body[$i])) {
+                if (array_key_exists('name', $body[$i]) && !empty($body[$i]['name'])) {
+                    // check available name
+                    $count = $this->dbCount($this->table, ['name' => $body[$i]['name']], ["{$this->table}.{$unique_key} <> {$body[$i][$unique_key]}"]);
 
-                if ($check > 0 || in_array($body[$i]['name'], $names)) {
-                    continue;
+                    if ($count > 0 || in_array($body[$i]['name'], $names)) {
+                        continue;
+                    }
+
+                    array_push($names, $body[$i]['name']);
                 }
-
-                array_push($names, $body[$i]['name']);
             }
 
             if (!array_key_exists('created', $body[$i])) {
@@ -381,32 +317,19 @@ class ProductCategoriesController extends ApiController
         }
 
         if (empty($data)) {
-            $handler = $this->ci->get('badRequestHandler');
-            return $handler($request, $response, 'Empty data');
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Invalid data');
         }
 
-        $inserted = $this->insertDuplicateUpdateData($this->table, $data);
+        $result = $this->dbInsertManyUpdate($this->table, $data, $protected);
 
-        if ($inserted) {
-            $inserted_min = $this->conn->lastInsertId();
-            $inserted_max = $inserted + $inserted_min;
-            $inserted_ids = [];
-
-            for ($j = $inserted_min; $j < $inserted_max; $j++) {
-                array_push($inserted_ids, ['id' => (string) $j]);
-            }
-
-            $result = [
-                'code'   => 200,
-                'total'  => count($inserted_ids),
-                'data'   => $inserted_ids,
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successCreatedHandler');
+            return $handler($req, $res, $result);
         }
 
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
     }
+
 }

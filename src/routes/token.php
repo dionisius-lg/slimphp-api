@@ -1,15 +1,18 @@
 <?php
 
-$pathname   = basename(__FILE__, '.php');
-$controller = camelcase($pathname, true) . 'Controller';
-$schema     = camelcase($pathname, true) . 'Schema';
+$path = pathinfo(basename(__FILE__), PATHINFO_FILENAME);
+$controller = camelcase($path, true) . 'Controller';
+$schema = camelcase($path, true) . 'Schema';
 
 require_once __DIR__ . "/../controllers/{$controller}.php";
 require_once __DIR__ . "/../schemas/{$schema}.php";
 
-$app->post("/{$pathname}", "\\{$controller}:generate")
-    ->add($validation($schema::generate()));
+$app->post("/{$path}", "\\{$controller}:auth")
+    // validate request body
+    ->add($validation($schema::auth(), 'body'));
 
-$app->post("/{$pathname}/refresh", "\\{$controller}:refresh")
+$app->post("/{$path}/refresh", "\\{$controller}:refreshAuth")
+    // auth refresh token
     ->add($authenticate_refresh)
-    ->add($validation($schema::refresh()));
+    // validate request body
+    ->add($validation($schema::refreshAuth(), 'body'));
