@@ -1,111 +1,130 @@
 <?php
 
-class ProvincesSchema
-{
+class ProvincesSchema {
+
     /**
-     * insert method
-     * return schema properties
+     *  schema for json validation
+     *  @return {array} schema
      */
-    public static function insert()
-    {
-        $properties = [
-            'name' => [
-                'type' => 'string',
-                'minLength' => 1,
-                'maxLength' => 100,
-                'required' => true,
-            ],
-            'is_active' => [
-                'type' => 'string',
-                'enum' => ['0','1'],
-            ],
+    public static function detail() {
+        $schema = [
+            "type" => "object",
+            "properties" => [
+                "id" => [
+                    "type" => "integer",
+                    "minimum" => 1,
+                    "required" => true
+                ]
+            ]
         ];
 
-        return [
-            'type' => 'object',
-            'properties' => $properties
-        ];
+        return $schema;
     }
 
     /**
-     * update method
-     * return schema properties
+     *  schema for json validation
+     *  @return {array} schema
      */
-    public static function update()
-    {
-        $properties = [
-            'name' => [
-                'type' => 'string',
-                'minLength' => 1,
-                'maxLength' => 100,
-            ],
-            'is_active' => [
-                'type' => 'string',
-                'enum' => ['0','1'],
-            ],
+    public static function insert() {
+        $schema = [
+            "type" => "object",
+            "properties" => [
+                "name" => [
+                    "type" => "string",
+                    "minLength" => 1,
+                    "maxLength" => 50,
+                    "required" => true
+                ],
+                "is_active" => [
+                    "type" => "string",
+                    "enum" => ["0","1"]
+                ]
+            ]
         ];
 
-        return [
-            'type' => 'object',
-            'properties' => $properties
-        ];
+        return $schema;
     }
 
     /**
-     * insertMany method
-     * return schema properties
+     *  schema for json validation
+     *  @return {array} schema
      */
-    public static function insertMany()
-    {
-        $properties = [
-            'name' => [
-                'type' => 'string',
-                'minLength' => 1,
-                'maxLength' => 100,
-                'required' => true,
-            ],
-            'is_active' => [
-                'type' => 'string',
-                'enum' => ['0','1'],
-            ],
+    public static function update() {
+        $schema = [
+            "type" => "object",
+            "properties" => [
+                "name" => [
+                    "type" => "string",
+                    "minLength" => 1,
+                    "maxLength" => 50
+                ],
+                "is_active" => [
+                    "type" => "string",
+                    "enum" => ["0","1"]
+                ]
+            ]
         ];
 
-        return [
-            'type' => 'array',
-            'items' => [
-                'properties' => $properties
-            ],
-        ];
+        return $schema;
     }
 
     /**
-     * insertManyUpdate method
-     * return schema properties
+     *  schema for json validation
+     *  @return {array} schema
      */
-    public static function insertManyUpdate()
-    {
-        $properties = [
-            'id' => [
-                'type' => 'integer',
-                'minimum' => 1,
-                'required' => true,
-            ],
-            'name' => [
-                'type' => 'string',
-                'minLength' => 1,
-                'maxLength' => 100,
-            ],
-            'is_active' => [
-                'type' => 'string',
-                'enum' => ['0','1'],
-            ],
+    public static function insertMany() {
+        $schema = [
+            "type" => "array",
+            "items" => [
+                "type" => "object",
+                "properties" => [
+                    "name" => [
+                        "type" => "string",
+                        "minLength" => 1,
+                        "maxLength" => 50,
+                        "required" => true
+                    ],
+                    "is_active" => [
+                        "type" => "string",
+                        "enum" => ["0","1"]
+                    ]
+                ]
+            ]
         ];
 
-        return [
-            'type' => 'array',
-            'items' => [
-                'properties' => $properties
-            ],
-        ];
+        return $schema;
     }
+
+    /**
+     *  schema for json validation
+     *  @return {array} schema
+     */
+    public static function insertManyUpdate() {
+        $schema = [
+            "type" => "array",
+            "items" => [
+                "type" => "object",
+                "properties" => [
+                    "id" => [
+                        "type" => "integer",
+                        "minimum" => 1,
+                        "required" => true
+                    ],
+                    "name" => [
+                        "type" => "string",
+                        "minLength" => 1,
+                        "maxLength" => 50,
+                        "required" => true
+                    ],
+                    "is_active" => [
+                        "type" => "string",
+                        "enum" => ["0","1"]
+                    ]
+                ]
+            ]
+        ];
+
+        return $schema;
+    }
+
 }

@@ -1,46 +1,70 @@
 <?php
 
-class TokenSchema
-{
+class TokenSchema {
+
     /**
-     * generate method
-     * return schema properties
+     *  schema for json validation
+     *  @return {array} schema
      */
-    public static function generate()
-    {
-        $properties = [
-            'username' => [
-                'type' => 'string',
-                'required' => true,
-            ],
-            'password' => [
-                'type' => 'string',
-                'required' => true,
-            ],
+    public static function auth() {
+        $schema = [
+            "type" => "object",
+            "properties" => [
+                "username" => [
+                    "type" => "string",
+                    "minLength" => 1,
+                    "required" => true
+                ],
+                "password" => [
+                    "type" => "string",
+                    "minLength" => 1,
+                    "required" => true
+                ]
+            ]
         ];
 
-        return [
-            'type' => 'object',
-            'properties' => $properties
-        ];
+        return $schema;
     }
 
     /**
-     * refresh method
-     * return schema properties
+     *  schema for json validation
+     *  @return {array} schema
      */
-    public static function refresh()
-    {
-        $properties = [
-            'token' => [
-                'type' => 'string',
-                'required' => true,
-            ],
+    public static function refreshAuth() {
+        $schema = [
+            "type" => "object",
+            "properties" => [
+                "token" => [
+                    "type" => "string",
+                    "minLength" => 1,
+                    "required" => true
+                ]
+            ]
         ];
 
-        return [
-            'type' => 'object',
-            'properties' => $properties
-        ];
+        return $schema;
     }
+
+    /**
+     *  schema for json validation
+     *  @return {array} schema
+     */
+    public static function refreshAuth2() {
+        $schema = [
+            "type" => "array",
+            "items" => [
+                "type" => "object",
+                "properties" => [
+                    "token" => [
+                        "type" => "string",
+                        "minLength" => "1",
+                        "required" => true
+                    ]
+                ]
+            ]
+        ];
+
+        return $schema;
+    }
+
 }

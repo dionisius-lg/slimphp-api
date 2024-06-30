@@ -1,330 +1,308 @@
 <?php
 
-use Psr\Container\ContainerInterface;
+use \Psr\Container\ContainerInterface as Container;
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
 
-class UsersController extends ApiController
-{
+class UsersController extends Controller {
+
     /**
-     *  __construct method
      *  variable initialization
-     *  @param ContainerInterface $ci
+     *  @param {Container} $cont
      */
-    public function __construct(ContainerInterface $ci)
-    {
-        parent::__construct($ci);
+    public function __construct(Container $cont)  {
+        parent::__construct($cont);
         $this->table = 'users';
+        $this->table_provinces = 'provinces';
+        $this->table_cities = 'cities';
+        $this->table_user_levels = 'user_levels';
     }
 
     /**
-     *  getAll method
      *  get all data
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
      */
-    public function getAll($request, $response)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $condition_custom = [];
-        $condition = array_merge(['limit' => 20], $request->getQueryParams());
+    public function getAll(Request $req, Response $res) {
+        $conditions = $req->getQueryParams();
+        $custom_conditions = $column_select = $column_deselect = $custom_columns = $join = $group_by = $custom_orders = [];
 
-        $column_select = [
+        array_push($column_deselect, 'password');
+        array_push($custom_columns, "{$this->table_provinces}.name AS province");
+        array_push($custom_columns, "{$this->table_cities}.name AS city");
+        array_push($custom_columns, "{$this->table_user_levels}.name AS user_level");
+        array_push($join, "LEFT JOIN {$this->table_provinces} ON {$this->table_provinces}.id = {$this->table}.province_id");
+        array_push($join, "LEFT JOIN {$this->table_cities} ON {$this->table_cities}.id = {$this->table}.city_id");
+        array_push($join, "LEFT JOIN {$this->table_user_levels} ON {$this->table_user_levels}.id = {$this->table}.user_level_id");
+        array_push($group_by, "{$this->table}.id");
 
-        ];
-
-        $column_deselect = [
-            "password",
-        ];
-
-        $column_custom = [
-            "user_levels.name AS user_level",
-        ];
-
-        $join = [
-            "LEFT JOIN user_levels ON user_levels.id = {$this->table}.user_level_id",
-        ];
-
-        $group_by = [
-            "{$this->table}.id",
-        ];
-
-        $order_custom = [
-
-        ];
-
-        if (array_key_exists('xxx_id', $condition)) {
-            if (is_numeric($condition['xxx_id'])) {
-                array_push($condition_custom, "{$this->table}.id <> {$condition['xxx_id']}");
-            }
-
-            unset($condition['xxx_id']);
-        }
-
-        if (array_key_exists('start', $condition)) {
-            if ((string) (int) $condition['start'] === $condition['start']) {
-                $start = date('Y-m-d', $condition['start']);
+        if (array_key_exists('start', $conditions)) {
+            if ((string) (int) $conditions['start'] === $conditions['start']) {
+                $start = date('Y-m-d', $conditions['start']);
                 $end = $start;
 
-                if (array_key_exists('end', $condition)) {
-                    if ((string) (int) $condition['end'] === $condition['end']) {
-                        $end = date('Y-m-d', $condition['end']);
+                if (array_key_exists('end', $conditions)) {
+                    if ((string) (int) $conditions['end'] === $conditions['end']) {
+                        $end = date('Y-m-d', $conditions['end']);
                     }
 
-                    unset($condition['end']);
+                    unset($conditions['end']);
                 }
 
-                array_push($condition_custom, "DATE({$this->table}.created) BETWEEN '{$start}' AND '{$end}'");
-                unset($condition['start']);
+                array_push($custom_conditions, "DATE({$this->table}.created) BETWEEN '{$start}' AND '{$end}'");
+                unset($conditions['start']);
             }
         }
 
-        if (array_key_exists('fullname', $condition)) {
-            if (!empty($condition['fullname'])) {
-                array_push($condition_custom, "{$this->table}.fullname LIKE '%{$condition['fullname']}%'");
-            }
-
-            unset($condition['fullname']);
-        }
- 
-        $result = $this->getData($this->table, $condition, $condition_custom, $column_select, $column_deselect, $column_custom, $join, $group_by, $order_custom);
-
-        if ($result['total'] > 0) {
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        if (array_key_exists('username', $conditions)) {
+            array_push($custom_conditions, "{$this->table}.username LIKE '%{$conditions['username']}%'");
+            unset($conditions['username']);
         }
 
-        $handler = $this->ci->get('notFoundHandler');
-        return $handler($request, $response);
+        if (array_key_exists('fullname', $conditions)) {
+            array_push($custom_conditions, "{$this->table}.fullname LIKE '%{$conditions['fullname']}%'");
+            unset($conditions['fullname']);
+        }
+
+        $result = $this->dbGetAll($this->table, $conditions, $custom_conditions, $column_select, $column_deselect, $custom_columns, $join, $group_by, $custom_orders);
+
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, $result);
+        }
+
+        $handler = $this->cont->get('notFoundHandler');
+        return $handler($req, $res);
     }
 
     /**
-     *  getDetail method
-     *  get detail data
+     *  get detail data by given arguments
+     *  @param {Request} $req, {Response} $res, {array} $args
+     *  @return {array} $handler
      */
-    public function getDetail($request, $response, $args)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $condition_custom = [];
-        $condition = array_merge(['limit' => 1], $args);
+    public function getDetail(Request $req, Response $res, $args) {
+        $conditions = $args;
+        $custom_conditions = $column_select = $column_deselect = $custom_columns = $join = [];
 
-        $column_select = [
-
-        ];
-
-        $column_deselect = [
-            'password',
-        ];
-
-        $column_custom = [
-            "user_levels.name AS user_level",
-        ];
-
-        $join = [
-            "LEFT JOIN user_levels ON user_levels.id = {$this->table}.user_level_id",
-        ];
-
-        $group_by = [
-            "{$this->table}.id",
-        ];
-
-        $order_custom = [
-
-        ];
-
-        $result = $this->getData($this->table, $condition, $condition_custom, $column_select, $column_deselect, $column_custom, $join, $group_by, $order_custom);
-
-        if ($result['total'] > 0) {
-            $result['data'] = $result['data'][0];
-            
-            if (array_key_exists('paging', $result)) {
-                unset($result['paging']);
-            }
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        if (empty($conditions)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res);
         }
 
-        $handler = $this->ci->get('notFoundHandler');
-        return $handler($request, $response);
+        array_push($column_deselect, 'password');
+        array_push($custom_columns, "{$this->table_provinces}.name AS province");
+        array_push($custom_columns, "{$this->table_cities}.name AS city");
+        array_push($custom_columns, "{$this->table_user_levels}.name AS user_level");
+        array_push($join, "LEFT JOIN {$this->table_provinces} ON {$this->table_provinces}.id = {$this->table}.province_id");
+        array_push($join, "LEFT JOIN {$this->table_cities} ON {$this->table_cities}.id = {$this->table}.city_id");
+        array_push($join, "LEFT JOIN {$this->table_user_levels} ON {$this->table_user_levels}.id = {$this->table}.user_level_id");
+
+        $result = $this->dbGetDetail($this->table, $conditions, $custom_conditions, $column_select, $column_deselect, $custom_columns, $join);
+
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, $result);
+        }
+
+        $handler = $this->cont->get('notFoundHandler');
+        return $handler($req, $res);
     }
 
     /**
-     *  insert method
      *  insert new data
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
      */
-    public function insert($request, $response)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
+    public function insert(Request $req, Response $res) {
+        $decoded = $req->getAttribute('decoded');
+        $data = $req->getParsedBody();
         $protected = ['id'];
 
-        if (array_key_exists('password', $body)) {
-            $body['password'] = password_hash($body['password'], PASSWORD_BCRYPT, ['cost' => 10]);
+        // check available username
+        $count = $this->dbCount($this->table, ['username' => $data['username']]);
+
+        if ($count > 0) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Username already exist');
         }
 
-        if (array_key_exists('username', $body)) {
-            $check = $this->checkData($this->table, ['username' => $body['username']]);
+        if (array_key_exists('password', $data)) {
+            $data['password'] = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 10]);
+        }
 
-            if ($check > 0) {
-                $handler = $this->ci->get('badRequestHandler');
-                return $handler($request, $response, 'Username already exist');
+        if (array_key_exists('email', $data)) {
+            // check available email
+            $count = $this->dbCount($this->table, ['email' => $data['email']]);
+
+            if ($count > 0) {
+                $handler = $this->cont->get('badRequestHandler');
+                return $handler($req, $res, 'Email already exist');
             }
         }
 
-        if (array_key_exists('email', $body)) {
-            $check = $this->checkData($this->table, ['email' => $body['email']]);
-
-            if ($check > 0) {
-                $handler = $this->ci->get('badRequestHandler');
-                return $handler($request, $response, 'Email already exist');
-            }
+        if (!array_key_exists('created', $data)) {
+            $data['created'] = date('Y-m-d H:i:s');
         }
 
-        if (!array_key_exists('created', $body)) {
-            $body['created'] = date('Y-m-d H:i:s');
+        if (!array_key_exists('created_by', $data)) {
+            $data['created_by'] = $decoded['id'];
         }
 
-        if (!array_key_exists('created_by', $body)) {
-            $body['created_by'] = $decoded['id'];
+        $result = $this->dbInsert($this->table, $data, $protected);
+
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successCreatedHandler');
+            return $handler($req, $res, $result);
         }
 
-        $inserted = $this->insertData($this->table, $body, $protected);
-
-        if ($inserted) {
-            $result = [
-                'code'   => 201,
-                'total'  => 1,
-                'data'   => ['id' => $this->conn->lastInsertId()],
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
-        }
-
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
     }
 
     /**
-     *  update method
-     *  update existing data by given id
+     *  update existing data by given arguments
+     *  @param {Request} $req, {Response} $res, {array} $args
+     *  @return {array} $handler
      */
-    public function update($request, $response, $args)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
+    public function update(Request $req, Response $res, $args) {
+        $decoded = $req->getAttribute('decoded');
+        $data = $req->getParsedBody();
+        $conditions = $args;
         $protected = ['id'];
 
-        $check = $this->checkData($this->table, ['id' => $args['id']]);
-
-        if ($check == 0) {
-            $handler = $this->ci->get('notFoundHandler');
-            return $handler($request, $response);
+        if (empty($conditions)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res);
         }
 
-        if (array_key_exists('username', $body)) {
-            $check = $this->checkData($this->table, ['username' => $body['username'], 'xxx_id' => $args['id']]);
+        if (array_key_exists('id', $conditions)) {
+            // check exist data
+            $count = $this->dbCount($this->table, ['id' => $conditions['id']]);
 
-            if ($check > 0) {
-                $handler = $this->ci->get('badRequestHandler');
-                return $handler($request, $response, 'Username already exist');
+            if ($count == 0) {
+                $handler = $this->cont->get('notFoundHandler');
+                return $handler($req, $res);
+            }
+
+            if (array_key_exists('username', $data)) {
+                // check available username
+                $count = $this->dbCount($this->table, [], ["username {$data['username']}", "id <> {$conditions['id']}"]);
+    
+                if ($count > 0) {
+                    $handler = $this->cont->get('badRequestHandler');
+                    return $handler($req, $res, 'Username already exist');
+                }
+            }
+
+            if (array_key_exists('email', $data)) {
+                // check available email
+                $count = $this->dbCount($this->table, [], ["email {$data['email']}", "id <> {$conditions['id']}"]);
+    
+                if ($count > 0) {
+                    $handler = $this->cont->get('badRequestHandler');
+                    return $handler($req, $res, 'Email already exist');
+                }
             }
         }
 
-        if (array_key_exists('password', $body)) {
-            $body['password'] = password_hash($body['password'], PASSWORD_BCRYPT, ['cost' => 10]);
+        if (array_key_exists('password', $data)) {
+            $data['password'] = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 10]);
         }
 
-        if (array_key_exists('email', $body)) {
-            $check = $this->checkData($this->table, ['email' => $body['email'], 'xxx_id' => $args['id']]);
-
-            if ($check > 0) {
-                $handler = $this->ci->get('badRequestHandler');
-                return $handler($request, $response, 'Email already exist');
-            }
+        if (!array_key_exists('updated', $data)) {
+            $data['updated'] = date('Y-m-d H:i:s');
         }
 
-        if (!array_key_exists('updated', $body)) {
-            $body['updated'] = date('Y-m-d H:i:s');
+        if (!array_key_exists('updated_by', $data)) {
+            $data['updated_by'] = $decoded['id'];
         }
 
-        if (!array_key_exists('updated_by', $body)) {
-            $body['updated_by'] = $decoded['id'];
+        $result = $this->dbUpdate($this->table, $data, $conditions, $protected);
+
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, $result);
         }
 
-        $updated = $this->updateData($this->table, $body, ['id' => $args['id']], $protected);
-
-        if ($updated) {
-            $result = [
-                'total' => 1,
-                'data'  => ['id' => $args['id']],
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
-        }
-
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
     }
 
     /**
-     *  delete method
-     *  delete existing data by given id
+     *  delete existing data by given arguments
+     *  @param {Request} $req, {Response} $res, {array} $args
+     *  @return {array} $handler
      */
-    public function delete($request, $response, $args)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
+    public function delete(Request $req, Response $res, $args) {
+        $decoded = $req->getAttribute('decoded');
+        $data = $req->getParsedBody();
 
-        $check = $this->checkData($this->table, ['id' => $args['id']]);
-
-        if ($check == 0) {
-            $handler = $this->ci->get('notFoundHandler');
-            return $handler($request, $response);
+        if (empty($args)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res);
         }
 
-        $deleted = $this->deleteData($this->table, ['id' => $args['id']]);
+        $conditions = [];
 
-        if ($deleted) {
-            $result = [
-                'total' => 1,
-                'data'  => ['id' => $args['id']],
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        foreach ($args as $key => $val) {
+            $conditions[$key] = $val;
         }
 
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        $result = $this->dbDelete($this->table, $conditions);
+
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, $result);
+        }
+
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
     }
 
     /**
-     *  insertMany method
-     *  insert new many data
+     *  insert new multiple data
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
      */
-    public function insertMany($request, $response)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
-        $protected = ['id'];
+    public function insertMany(Request $req, Response $res) {
+        $decoded = $req->getAttribute('decoded');
+        $body = $req->getParsedBody();
+        $protected = [];
+
+        if (!is_array_multi($body)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Invalid data');
+        }
 
         $data = [];
         $usernames = [];
+        $emails = [];
 
         for ($i = 0; $i < count($body); $i++) {
             if (array_key_exists('username', $body[$i]) && !empty($body[$i]['username'])) {
-                $check = $this->checkData($this->table, ['username' => $body[$i]['username']]);
+                // check available username
+                $count = $this->dbCount($this->table, ['username' => $body[$i]['username']]);
 
-                if ($check > 0 || in_array($body[$i]['username'], $usernames)) {
+                if ($count > 0 || in_array($body[$i]['username'], $usernames)) {
                     continue;
                 }
 
                 array_push($usernames, $body[$i]['username']);
             }
 
+            if (array_key_exists('email', $body[$i]) && !empty($body[$i]['email'])) {
+                // check available email
+                $count = $this->dbCount($this->table, ['email' => $body[$i]['email']]);
+
+                if ($count > 0 || in_array($body[$i]['email'], $emails)) {
+                    continue;
+                }
+
+                array_push($emails, $body[$i]['email']);
+            }
+
             if (array_key_exists('password', $body[$i]) && !empty($body[$i]['password'])) {
                 $body[$i]['password'] = password_hash($body[$i]['password'], PASSWORD_BCRYPT, ['cost' => 10]);
-            } else {
-                $body[$i]['password'] = password_hash($body[$i]['username'], PASSWORD_BCRYPT, ['cost' => 10]);
             }
 
             if (!array_key_exists('created', $body[$i])) {
@@ -339,49 +317,38 @@ class UsersController extends ApiController
         }
 
         if (empty($data)) {
-            $handler = $this->ci->get('badRequestHandler');
-            return $handler($request, $response, 'Empty data');
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Invalid data');
         }
 
-        $inserted = $this->insertManyData($this->table, $data, $protected);
+        $result = $this->dbInsertMany($this->table, $data, $protected);
 
-        if ($inserted) {
-            $inserted_min = $this->conn->lastInsertId();
-            $inserted_max = $inserted + $inserted_min;
-            $inserted_ids = [];
-
-            for ($j = $inserted_min; $j < $inserted_max; $j++) {
-                array_push($inserted_ids, ['id' => (string) $j]);
-            }
-
-            $result = [
-                'code'   => 201,
-                'total'  => count($inserted_ids),
-                'data'   => $inserted_ids,
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successCreatedHandler');
+            return $handler($req, $res, $result);
         }
 
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
     }
 
     /**
-     *  insertManyUpdate method
-     *  insert many on duplicate update data
+     *  insert new multiple data update on duplicate
+     *  @param {Request} $req, {Response} $res
+     *  @return {array} $handler
      */
-    public function insertManyUpdate($request, $response)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
+    public function insertManyUpdate(Request $req, Response $res) {
+        $decoded = $req->getAttribute('decoded');
+        $body = $req->getParsedBody();
         $protected = [];
-        $master_column = $this->checkColumnDetail($this->conf['database']['dbname'], $this->table);
 
-        $unique = null;
-        $data = [];
-        $usernames = [];
+        if (!is_array_multi($body)) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Invalid data');
+        }
+
+        $master_column = $this->dbColumnDetail($this->table);
+        $unique_key = null;
 
         foreach ($master_column as $key => $val) {
             if (($val['column_key'] === 'PRI' || $val['column_key'] === 'UNI') && !in_array($key, $protected)) {
@@ -390,15 +357,33 @@ class UsersController extends ApiController
             }
         }
 
-        for ($i = 0; $i < count($body); $i++) {
-            if (array_key_exists('username', $body[$i]) && !empty($body[$i]['username']) && array_key_exists($unique, $body[$i])) {
-                $check = $this->checkData($this->table, ['username' => $body[$i]['username'], 'xxx_' . $unique => $body[$i][$unique]]);
+        $data = [];
+        $usernames = [];
+        $emails = [];
 
-                if ($check > 0 || in_array($body[$i]['username'], $usernames)) {
-                    continue;
+        for ($i = 0; $i < count($body); $i++) {
+            if (array_key_exists($unique_key, $body[$i])) {
+                if (array_key_exists('username', $body[$i]) && !empty($body[$i]['username'])) {
+                    // check available username
+                    $count = $this->dbCount($this->table, ['username' => $body[$i]['username']], ["{$this->table}.{$unique_key} <> {$body[$i][$unique_key]}"]);
+
+                    if ($count > 0 || in_array($body[$i]['username'], $usernames)) {
+                        continue;
+                    }
+
+                    array_push($usernames, $body[$i]['username']);
                 }
 
-                array_push($usernames, $body[$i]['username']);
+                if (array_key_exists('email', $body[$i]) && !empty($body[$i]['email'])) {
+                    // check available email
+                    $count = $this->dbCount($this->table, ['email' => $body[$i]['email']], ["{$this->table}.{$unique_key} <> {$body[$i][$unique_key]}"]);
+
+                    if ($count > 0 || in_array($body[$i]['email'], $emails)) {
+                        continue;
+                    }
+
+                    array_push($emails, $body[$i]['email']);
+                }
             }
 
             if (array_key_exists('password', $body[$i]) && !empty($body[$i]['password'])) {
@@ -417,69 +402,19 @@ class UsersController extends ApiController
         }
 
         if (empty($data)) {
-            $handler = $this->ci->get('badRequestHandler');
-            return $handler($request, $response, 'Empty data');
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, 'Invalid data');
         }
 
-        $inserted = $this->insertDuplicateUpdateData($this->table, $data);
+        $result = $this->dbInsertManyUpdate($this->table, $data, $protected);
 
-        if ($inserted) {
-            $inserted_min = $this->conn->lastInsertId();
-            $inserted_max = $inserted + $inserted_min;
-            $inserted_ids = [];
-
-            for ($j = $inserted_min; $j < $inserted_max; $j++) {
-                array_push($inserted_ids, ['id' => (string) $j]);
-            }
-
-            $result = [
-                'code'   => 200,
-                'total'  => count($inserted_ids),
-                'data'   => $inserted_ids,
-            ];
-
-            $handler = $this->ci->get('successHandler');
-            return $handler($request, $response, $result);
+        if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successCreatedHandler');
+            return $handler($req, $res, $result);
         }
 
-        $handler = $this->ci->get('badRequestHandler');
-        return $handler($request, $response, 'Invalid data');
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
     }
 
-    /**
-     *  updatePassword method
-     *  update existing password data by given id
-     */
-    public function updatePassword($request, $response, $args)
-    {
-        $decoded = $request->getAttribute('decoded');
-        $body = $request->getParsedBody();
-
-        $user = $this->getData($this->table, ['id' => $args['id']]);
-
-        if ($user['total'] > 0) {
-            $user['data'] = $user['data'][0];
-
-            if (password_verify($body['password_old'], $user['data']['password'])) {
-                $data = ['password' => password_hash($body['password_new'], PASSWORD_BCRYPT, ['cost' => 10])];
-                $updated = $this->updateData($this->table, $data, ['id' => $args['id']]);
-
-                if ($updated) {
-                    $result = [
-                        'total' => 1,
-                        'data'  => ['id' => $args['id']],
-                    ];
-
-                    $handler = $this->ci->get('successHandler');
-                    return $handler($request, $response, $result);
-                }
-
-                $handler = $this->ci->get('badRequestHandler');
-                return $handler($request, $response, 'Invalid data');
-            }
-        }
-
-        $handler = $this->ci->get('notFoundHandler');
-        return $handler($request, $response);
-    }
 }

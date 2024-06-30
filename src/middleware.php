@@ -1,176 +1,144 @@
 <?php
 
-use Firebase\JWT\JWT as Jwt;
-use Firebase\JWT\Key as JwtKey;
-use JsonSchema\Validator as JsonValidator;
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
+use \Firebase\JWT\JWT as Jwt;
+use \Firebase\JWT\Key;
+use \JsonSchema\Validator;
 
-$authenticate = function ($request, $response, $next) use ($config, $container) {
-    $auth_key   = $request->getHeaderLine('X-Api-Key');
-    $auth_token = $request->getHeaderLine('Authorization');
-    $client_ip  = client_ip();
+/**
+ *  verify authentification (jwt token)
+ *  @param {Request} $req, {Response} $res,  $next
+ */
+$authenticate = function (Request $req, Response $res, callable $next) use ($config, $container) {
+    $auth_header = $req->getHeaderLine('authorization');
+    $client_ip = client_ip();
     $user_agent = 'unknown';
 
     if (isset($_SERVER['HTTP_USER_AGENT'])) {
         $user_agent = $_SERVER['HTTP_USER_AGENT'];
     }
 
-    if ($auth_key) {
-        try {
-            $decoded = json_decode(base64_decode(base64_decode($auth_key)));
-
-            if (is_object($decoded)) {
-                $decoded = object2array($decoded);
-            }
-
-            if (is_array_assoc($decoded) && count($decoded) === 3) {
-                if ($decoded['secret'] === $config['secret_key'] && $decoded['date'] === date('Y-m-d') && is_numeric($decoded['user_id'])) {
-                    $apic = new ApiController($container);
-                    $stmt = $apic->dbconnect()->prepare("SELECT * FROM users WHERE id = :id AND is_active = :is_active");
-                    $stmt->bindValue(':id', $decoded['user_id'], PDO::PARAM_INT);
-                    $stmt->bindValue(':is_active', '1', PDO::PARAM_INT);
-                    $stmt->execute();
-
-                    if ($stmt->rowCount() > 0) {
-                        $user_data    = $stmt->fetch(PDO::FETCH_ASSOC);
-                        $decoded_data = [
-                            'id'         => $user_data['id'],
-                            'client_ip'  => $client_ip,
-                            'user_agent' => $user_agent,
-                        ];
-
-                        $request = $request->withAttribute('decoded', $decoded_data);
-                        return $next($request, $response);
-                    }
-                }
-            }
-
-            throw new Exception('Unauthorized');
-        } catch (Exception $e) {
-            $handler = $container['unauthorizedHandler'];
-            return $handler($request, $response);
-        }
-    }
-
-    if ($auth_token) {
-        list($token) = sscanf($auth_token, 'Bearer %s');
+    if ($auth_header) {
+        list($token) = sscanf($auth_header, 'Bearer %s');
 
         try {
-            $decoded = Jwt::decode(
-                // Token to be decoded in the JWT
-                $token,
-                // The signing key & algorithm used to sign the token,
-                // see https://tools.ietf.org/html/draft-ietf-jose-json-web-algorithms-40#section-3
-                new JwtKey($config['jwt']['key'], $config['jwt']['algorithm'])
-            );
-
+            $decoded = Jwt::decode($token, new Key($config['jwt']['key'], $config['jwt']['algorithm']));
             $decoded = object2array($decoded);
 
-            if ($decoded['data']['client_ip'] != $client_ip || !is_numeric($decoded['data']['id'])) {
-                throw new Exception('Unauthorized');
-            }
+            $req = $req->withAttribute('decoded', $decoded['data']);
 
-            $request = $request->withAttribute('decoded', $decoded['data']);
-            return $next($request, $response);
+            return $next($req, $res);
         } catch (Exception $e) {
+            $error = $e->getMessage();
             $handler = $container['unauthorizedHandler'];
-            return $handler($request, $response);
+            return $handler($req, $res);
         }
     }
 
     $handler = $container['unauthorizedHandler'];
-    return $handler($request, $response);
+    return $handler($req, $res);
 };
 
-$authenticate_refresh = function ($request, $response, $next) use ($config, $container) {
-    $auth_token = $request->getHeaderLine('Authorization');
-    $client_ip  = client_ip();
+/**
+ *  verify refresh authentification (jwt token)
+ *  @param {Request} $req, {Response} $res, $next
+ */
+$authenticate_refresh = function (Request $req, Response $res, callable $next) use ($config, $container) {
+    $auth_header = $req->getHeaderLine('authorization');
+    $client_ip = client_ip();
     $user_agent = 'unknown';
 
     if (isset($_SERVER['HTTP_USER_AGENT'])) {
         $user_agent = $_SERVER['HTTP_USER_AGENT'];
     }
 
-    if ($auth_token) {
-        list($token) = sscanf($auth_token, 'Bearer %s');
+    if ($auth_header) {
+        list($token) = sscanf($auth_header, 'Bearer %s');
 
         try {
-            $decoded = Jwt::decode(
-                // Token to be decoded in the JWT
-                $token,
-                // The signing key & algorithm used to sign the token,
-                // see https://tools.ietf.org/html/draft-ietf-jose-json-web-algorithms-40#section-3
-                new JwtKey($config['jwt']['key_refresh'], $config['jwt']['algorithm'])
-            );
-
+            $decoded = Jwt::decode($token, new Key($config['jwt']['refresh_key'], $config['jwt']['algorithm']));
             $decoded = object2array($decoded);
 
             if ($decoded['data']['client_ip'] != $client_ip || !is_numeric($decoded['data']['id'])) {
                 throw new Exception('Unauthorized');
             }
 
-            $request = $request->withAttribute('decoded', $decoded['data']);
-            return $next($request, $response);
+            $req = $req->withAttribute('decoded', $decoded['data']);
+
+            return $next($req, $res);
         } catch (Exception $e) {
+            $error = $e->getMessage();
             $handler = $container['unauthorizedHandler'];
-            return $handler($request, $response);
+            return $handler($req, $res);
         }
     }
 
     $handler = $container['unauthorizedHandler'];
-    return $handler($request, $response);
+    return $handler($req, $res);
 };
 
-$validation = function ($schema = false, $property = null) use ($config, $container) {
-    return function ($request, $response, $next) use ($config, $container, $schema, $property) {
-        if (is_array($schema) && array_key_exists('type', $schema)) {
-            $validator = new JsonValidator();
-            $data = $property === 'param' ? $request->getQueryParams() : $request->getParsedBody();
+/**
+ *  Validation for given schema
+ *  @param {Request} $req, {Response} $res, $next
+ */
+$validation = function ($schema = [], $property = '') use ($config, $container) {
+    return function (Request $req, Response $res, callable $next) use ($config, $container, $schema, $property) {
+        switch ($property) {
+            case 'params':
+                $data = array_merge($req->getQueryParams(), $req->getAttribute('route')->getArguments());
+                break;
+            case 'body':
+                $data = $req->getParsedBody();
+                break;
+            default:
+                return $next($req, $res);
+                break;
+        }
 
-            try {
-                $validate_schema = !is_object($schema) ? array2object($schema) : $schema;
+        try {
+            if (!empty($schema)) {
+                $validator = new Validator();
+                $data = json_decode(json_encode($data));
 
-                switch (true) {
-                    case (is_array_multi($data) && $schema['type'] == 'array'):
-                        for ($i = 0; $i < count($data); $i++) {
-                            $data[$i] = array_intersect_key($data[$i], $schema['items']['properties']);
-                        }
-
-                        $validate_data = json_decode(json_encode($data), true);
-                        break;
-                    default:
-                        $data = array_intersect_key($data, $schema['properties']);
-                        $validate_data = (object) $data;
-                        break;
+                if (!is_object($schema)) {
+                    $schema = array2object($schema);
                 }
 
-                $validator->coerce($validate_data, $validate_schema);
+                $validator->coerce($data, $schema);
 
                 if (!$validator->isValid()) {
                     $errors = $validator->getErrors();
-                    print_r($errors); exit;
                     $message = "Error property {$errors[0]['property']}. {$errors[0]['message']}";
                     throw new Exception($message);
                 }
 
-                $schema_properties = $schema['type'] == 'array' ? $schema['items']['properties'] : $schema['properties'];
+                if ($schema->type == 'array') {
+                    $schema_properties = $schema->items->properties;
+                } else {
+                    $schema_properties = $schema->properties;
+                }
 
                 $datetime_keys = [];
-                $time_keys     = [];
+                $time_keys = [];
 
                 foreach ($schema_properties as $key => $val) {
                     if (array_key_exists('format', $val)) {
-                        if ($val['format'] == 'datetime') {
+                        // custom validation for datetime (yyyy-mm-dd hh:ii:ss)
+                        if ($val->format == 'datetime') {
                             array_push($datetime_keys, $key);
                         }
 
-                        if ($val['format'] == 'time2') {
+                        // custom validation for datetime (hh:ii:ss)
+                        if ($val->format == 'time2') {
                             array_push($time_keys, $key);
                         }
                     }
                 }
 
+                // custom validation for datetime (yyyy-mm-dd hh:ii:ss)
                 if (!empty($datetime_keys)) {
-                    if (is_array_multi($data) && $schema['type'] == 'array') {
+                    if (is_array_multi($data) && $schema->type == 'array') {
                         for ($i = 0; $i < count($data); $i++) {
                             foreach ($data[$i] as $key => $val) {
                                 if (in_array($key, $datetime_keys)) {
@@ -182,21 +150,22 @@ $validation = function ($schema = false, $property = null) use ($config, $contai
                                 }
                             }
                         }
-                    }
-                } else {
-                    foreach ($data as $key => $val) {
-                        if (in_array($key, $datetime_keys)) {
-                            if (format_datetime_object($val) === false) {
-                                $message = "Error property {$key}. Invalid datetime \"{$val}\", expected format YYYY-MM-DD hh:mm:ss";
-                                throw new Exception($message);
-                                break;
+                    } else {
+                        foreach ($data as $key => $val) {
+                            if (in_array($key, $datetime_keys)) {
+                                if (format_datetime_object($val) === false) {
+                                    $message = "Error property {$key}. Invalid datetime \"{$val}\", expected format YYYY-MM-DD hh:mm:ss";
+                                    throw new Exception($message);
+                                    break;
+                                }
                             }
                         }
                     }
                 }
 
+                // custom validation for datetime (hh:ii:ss)
                 if (!empty($time_keys)) {
-                    if (is_array_multi($data) && $schema['type'] == 'array') {
+                    if (is_array_multi($data) && $schema->type == 'array') {
                         for ($i = 0; $i < count($data); $i++) {
                             foreach ($data[$i] as $key => $val) {
                                 if (in_array($key, $time_keys)) {
@@ -221,13 +190,31 @@ $validation = function ($schema = false, $property = null) use ($config, $contai
                     }
                 }
 
-                return $next($request, $response);
-            } catch (Exception $e) {
-                $handler = $container['badRequestHandler'];
-                return $handler($request, $response, $e->getmessage());
-            }
-        }
+                $data = object2array($data);
 
-        return $next($request, $response);
+                // remove data key not in schema
+                if (!empty($data)) {
+                    switch (true) {
+                        case (is_array_multi($data)):
+                            for ($i = 0; $i < count($data); $i++) {
+                                $data[$i] = array_intersect_key((array) $data[$i], (array) $schema_properties);
+                            }
+                            break;
+                        default:
+                            $data = array_intersect_key((array) $data, (array) $schema_properties);
+                            break;
+                    }
+                }
+
+                // rewrite request body with filtered schema data
+                $req = $req->withParsedBody($data);
+            }
+
+            return $next($req, $res);
+        } catch (Exception $e) {
+            $error = $e->getmessage();
+            $handler = $container['badRequestHandler'];
+            return $handler($req, $res, $error);
+        }
     };
 };
