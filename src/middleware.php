@@ -26,6 +26,10 @@ $authenticate = function (Request $req, Response $res, callable $next) use ($con
             $decoded = Jwt::decode($token, new Key($config['jwt']['key'], $config['jwt']['algorithm']));
             $decoded = object2array($decoded);
 
+            if ($decoded['data']['client_ip'] != $client_ip || !is_numeric($decoded['data']['id'])) {
+                throw new Exception('Unauthorized');
+            }
+
             $req = $req->withAttribute('decoded', $decoded['data']);
 
             return $next($req, $res);

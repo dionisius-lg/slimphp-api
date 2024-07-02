@@ -1,16 +1,15 @@
 <?php
 
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Psr\Http\Message\ResponseInterface as Response;
-
-$container = $app->getContainer();
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
+use \Psr\Container\ContainerInterface as Container;
 
 /**
  * Success 200 OK
  * @param {Request} $req, {Response} $res, {array} $data
  * @return {object} $result
  */
-$container['successHandler'] = function ($container) {
+$container['successHandler'] = function (Container $container) {
     return function (Request $req, Response $res, $data = []) use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
@@ -18,8 +17,8 @@ $container['successHandler'] = function ($container) {
         ];
 
         if (!empty($data) && is_array($data)) {
-            if (array_key_exists('total', $data) && is_numeric($data['total'])) {
-                $result['total'] = $data['total'];
+            if (array_key_exists('total_data', $data) && is_numeric($data['total_data'])) {
+                $result['total_data'] = $data['total_data'];
             }
 
             if (array_key_exists('data', $data) && is_array($data['data'])) {
@@ -40,7 +39,7 @@ $container['successHandler'] = function ($container) {
  * @param {Request} $req, {Response} $res, {array} $data
  * @return {object} $result
  */
-$container['successCreatedHandler'] = function ($container) {
+$container['successCreatedHandler'] = function (Container $container) {
     return function (Request $req, Response $res, $data = []) use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
@@ -48,8 +47,8 @@ $container['successCreatedHandler'] = function ($container) {
         ];
 
         if (!empty($data) && is_array($data)) {
-            if (array_key_exists('total', $data) && is_numeric($data['total'])) {
-                $result['total'] = $data['total'];
+            if (array_key_exists('total_data', $data) && is_numeric($data['total_data'])) {
+                $result['total_data'] = $data['total_data'];
             }
 
             if (array_key_exists('data', $data) && is_array($data['data'])) {
@@ -66,7 +65,7 @@ $container['successCreatedHandler'] = function ($container) {
  * @param {Request} $req, {Response} $res, {string} $message
  * @return {object} $result
  */
-$container['badRequestHandler'] = function ($container) {
+$container['badRequestHandler'] = function (Container $container) {
     return function (Request $req, Response $res, $message = '') use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
@@ -87,7 +86,7 @@ $container['badRequestHandler'] = function ($container) {
  * @param {Request} $req, {Response} $res, {string} $message
  * @return {object} $result
  */
-$container['unauthorizedHandler'] = function ($container) {
+$container['unauthorizedHandler'] = function (Container $container) {
     return function (Request $req, Response $res, $message = '') use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
@@ -109,7 +108,7 @@ $container['unauthorizedHandler'] = function ($container) {
  * @param {Request} $req, {Response} $res, {string} $message
  * @return {object} $result
  */
-$container['forbiddenHandler'] = function ($container) {
+$container['forbiddenHandler'] = function (Container $container) {
     return function (Request $req, Response $res, $message = '') use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
@@ -131,7 +130,7 @@ $container['forbiddenHandler'] = function ($container) {
  * @param {Request} $req, {Response} $res, {string} $message
  * @return {object} $result
  */
-$container['notFoundHandler'] = function ($container) {
+$container['notFoundHandler'] = function (Container $container) {
     return function (Request $req, Response $res, $message = '') use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
@@ -152,7 +151,7 @@ $container['notFoundHandler'] = function ($container) {
  * @param {Request} $req, {Response} $res, {string} $method
  * @return {object} $result
  */
-$container['notAllowedHandler'] = function ($container) {
+$container['notAllowedHandler'] = function (Container $container) {
     return function (Request $req, Response $res, $method) use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
@@ -169,7 +168,7 @@ $container['notAllowedHandler'] = function ($container) {
  * @param {Request} $req, {Response} $res, {Exception} $except
  * @return {object} $result
  */
-$container['errorHandler'] = function ($container) {
+$container['errorHandler'] = function (Container $container) {
     return function (Request $req, Response $res, $except) use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
@@ -189,6 +188,6 @@ $container['errorHandler'] = function ($container) {
  * Global Config
  * @return {array} $config
  */
-$container['config'] = function ($container) use ($config) {
+$container['config'] = function (Container $container) use ($config) {
     return $config;
 };

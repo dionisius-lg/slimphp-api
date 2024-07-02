@@ -373,7 +373,7 @@ if (!function_exists('camelcase')) {
  */
 if (!function_exists('file_read')) {
     function file_read($filename, $folder = null) {
-        global $config;
+        global $container;
 
         try {
             $fileinfo = pathinfo($filename);
@@ -388,7 +388,7 @@ if (!function_exists('file_read')) {
 
             if (!empty($fileinfo['filename']) && !empty($fileinfo['extension'])) {
                 $filename = $fileinfo['filename'] . '.' . $fileinfo['extension'];
-                $path = $config['dir']['files'];
+                $path = $container['dir']['files'];
 
                 if (!empty($folder) && is_string($folder)) {
                     $path .= $folder . '/';
@@ -421,7 +421,7 @@ if (!function_exists('file_read')) {
  */
 if (!function_exists('file_write')) {
     function file_write($filename, $content = null, $folder = null) {
-        global $config;
+        global $container;
 
         try {
             if (!empty($content)) {
@@ -437,7 +437,7 @@ if (!function_exists('file_write')) {
 
                 if (!empty($fileinfo['filename']) && !empty($fileinfo['extension'])) {
                     $filename = $fileinfo['filename'] . '.' . $fileinfo['extension'];
-                    $path = $config['dir']['files'];
+                    $path = $container['dir']['files'];
 
                     if (!empty($folder) && is_string($folder)) {
                         $path .= $folder . '/';
@@ -470,6 +470,8 @@ if (!function_exists('file_write')) {
  */
 if (!function_exists('file_remove')) {
     function file_remove($filename, $folder = null) {
+        global $container;
+
         try {
             $fileinfo = pathinfo($filename);
 
@@ -483,7 +485,7 @@ if (!function_exists('file_remove')) {
 
             if (!empty($fileinfo['filename']) && !empty($fileinfo['extension'])) {
                 $filename = $fileinfo['filename'] . '.' . $fileinfo['extension'];
-                $path = $config['dir']['files'];
+                $path = $container['dir']['files'];
 
                 if (!empty($folder) && is_string($folder)) {
                     $path .= $folder . '/';
@@ -623,6 +625,52 @@ if (!function_exists('filter_data')) {
                     }
                 }
                 break;
+        }
+
+        return $data;
+    }
+}
+
+/**
+ *  create & write log for every access
+ *  @param {int} $status, {string} $method, {string} $path, {string} $body
+ *  @return {array} $data
+ */
+if (!function_exists('access_log')) {
+    function access_log($method, $endpoint, $body, $status) {
+        global $container;
+
+        $log_dir = rtrim($container['dir']['logs'], '/') . '/';
+
+        if (!is_dir($log_dir)) {
+            mkdir($log_dir, 0777);
+        }
+
+        $log_path = $log_dir . 'access-' . date('Ymd') . '.log';
+        $log_date = date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']);
+        $log_content_length = array_key_exists('CONTENT_LENGTH', $_SERVER) && !empty($_SERVER['CONTENT_LENGTH']) ? $_SERVER['CONTENT_LENGTH'] : 0;
+        $log_message = client_ip() . " - [{$log_date}] {$status} \"{$method} {$endpoint}\" {$body} - {$log_content_length}";
+
+        // always update not replace (FILE_APPEND)
+        file_put_contents($log_path, $log_message . "\n", FILE_APPEND);
+    }
+}
+
+/**
+ *  mask sensitive data
+ *  @param {array} $data
+ *  @return {array} $data
+ */
+if (!function_exists('mask_data')) {
+    function mask_data($data) {
+        if (!empty($data) && is_array_assoc($data)) {
+            $sensitives = ['password', 'secret'];
+
+            foreach ($data as $key => $val) {
+                if (in_array(strtolower($key), $sensitives) && is_string($val)) {
+                    $data[$key] = str_repeat('*', strlen($val));
+                }
+            }
         }
 
         return $data;

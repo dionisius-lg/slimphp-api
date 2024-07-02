@@ -6,15 +6,18 @@ set_time_limit(120); // 2 minutes
 // load vendor
 require __DIR__ . '/vendor/autoload.php';
 
+use \Slim\App;
+use \Dotenv\Dotenv;
+
 // load .env file
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
 // reqister config
 $config = require __DIR__ . '/src/config.php';
 
 // reqister app
-$app = new \Slim\App($config);
+$app = new App($config);
 
 // register helper
 require __DIR__ . '/src/helper.php';
@@ -30,6 +33,9 @@ require __DIR__ . '/src/controllers/Controller.php';
 
 // register route
 require __DIR__ . '/src/routes/index.php';
+
+// register logger
+require __DIR__ . '/src/logger.php';
 
 // run app
 $app->run();
