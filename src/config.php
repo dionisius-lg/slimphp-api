@@ -21,4 +21,9 @@ return [
         'expire' => getenv('JWT_EXPIRE') ?: '86400', // token will expire after this value (in seconds) (https://github.com/vercel/ms)
         'refresh_expire' => getenv('JWT_REFRESH_EXPIRE') ?: '604800', // token will expire after this value (in seconds) (https://github.com/vercel/ms)
     ],
+    'secret_key' => 'mY5uP3rsEcR3tKEy',
+    'dir' => [
+        'logs' => __DIR__ . '/../logs',
+        'files' =>getenv('DIR_FILE') ?: __DIR__ . '/../files',
+    ]
 ];
