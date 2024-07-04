@@ -4,7 +4,12 @@ use \Psr\Container\ContainerInterface as Container;
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
-class UserLevelsController extends Controller {
+use \Upload\Storage\FileSystem;
+use \Upload\File;
+use \Upload\Validation\Mimetype;
+use \Upload\Validation\Size;
+
+class UserFilesController extends Controller {
 
     /**
      *  variable initialization
@@ -12,7 +17,7 @@ class UserLevelsController extends Controller {
      */
     public function __construct(Container $cont)  {
         parent::__construct($cont);
-        $this->table = 'user_levels';
+        $this->table = 'user_files';
     }
 
     /**
@@ -42,9 +47,9 @@ class UserLevelsController extends Controller {
             }
         }
 
-        if (array_key_exists('name', $conditions)) {
-            array_push($custom_conditions, "{$this->table}.name LIKE '%{$conditions['name']}%'");
-            unset($conditions['name']);
+        if (array_key_exists('source', $conditions)) {
+            array_push($custom_conditions, "{$this->table}.source LIKE '%{$conditions['source']}%'");
+            unset($conditions['source']);
         }
 
         $result = $this->dbGetAll($this->table, $conditions, $custom_conditions, $column_select, $column_deselect, $custom_columns, $join, $group_by, $custom_orders);
@@ -93,12 +98,12 @@ class UserLevelsController extends Controller {
         $data = $req->getParsedBody();
         $protected = ['id'];
 
-        // check available name
-        $count = $this->dbCount($this->table, ['name' => $data['name']]);
+        // check available source
+        $count = $this->dbCount($this->table, ['source' => $data['source']]);
 
         if ($count > 0) {
             $handler = $this->cont->get('badRequestHandler');
-            return $handler($req, $res, 'Name already exist');
+            return $handler($req, $res, 'Source already exist');
         }
 
         if (!array_key_exists('created', $data)) {
@@ -145,13 +150,13 @@ class UserLevelsController extends Controller {
                 return $handler($req, $res);
             }
 
-            if (array_key_exists('name', $data)) {
-                // check available name
-                $count = $this->dbCount($this->table, [], ["name {$data['name']}", "id <> {$conditions['id']}"]);
+            if (array_key_exists('source', $data)) {
+                // check available source
+                $count = $this->dbCount($this->table, [], ["source {$data['source']}", "id <> {$conditions['id']}"]);
     
                 if ($count > 0) {
                     $handler = $this->cont->get('badRequestHandler');
-                    return $handler($req, $res, 'Name already exist');
+                    return $handler($req, $res, 'Source already exist');
                 }
             }
         }
@@ -222,18 +227,18 @@ class UserLevelsController extends Controller {
         }
 
         $data = [];
-        $names = [];
+        $sources = [];
 
         for ($i = 0; $i < count($body); $i++) {
-            if (array_key_exists('name', $body[$i]) && !empty($body[$i]['name'])) {
-                // check available name
-                $count = $this->dbCount($this->table, ['name' => $body[$i]['name']]);
+            if (array_key_exists('source', $body[$i]) && !empty($body[$i]['source'])) {
+                // check available source
+                $count = $this->dbCount($this->table, ['source' => $body[$i]['source']]);
 
-                if ($count > 0 || in_array($body[$i]['name'], $names)) {
+                if ($count > 0 || in_array($body[$i]['source'], $sources)) {
                     continue;
                 }
 
-                array_push($names, $body[$i]['name']);
+                array_push($sources, $body[$i]['source']);
             }
 
             if (!array_key_exists('created', $body[$i])) {
@@ -289,19 +294,19 @@ class UserLevelsController extends Controller {
         }
 
         $data = [];
-        $names = [];
+        $sources = [];
 
         for ($i = 0; $i < count($body); $i++) {
             if (array_key_exists($unique_key, $body[$i])) {
-                if (array_key_exists('name', $body[$i]) && !empty($body[$i]['name'])) {
-                    // check available name
-                    $count = $this->dbCount($this->table, ['name' => $body[$i]['name']], ["{$this->table}.{$unique_key} <> {$body[$i][$unique_key]}"]);
+                if (array_key_exists('source', $body[$i]) && !empty($body[$i]['source'])) {
+                    // check available source
+                    $count = $this->dbCount($this->table, ['source' => $body[$i]['source']], ["{$this->table}.{$unique_key} <> {$body[$i][$unique_key]}"]);
 
-                    if ($count > 0 || in_array($body[$i]['name'], $names)) {
+                    if ($count > 0 || in_array($body[$i]['source'], $sources)) {
                         continue;
                     }
 
-                    array_push($names, $body[$i]['name']);
+                    array_push($sources, $body[$i]['source']);
                 }
             }
 

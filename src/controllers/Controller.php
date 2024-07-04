@@ -655,6 +655,10 @@ class Controller {
         $query = "DELETE FROM {$table}";
         $condition_query = [];
 
+        $time_char = ['CURRENT_TIMESTAMP()', 'NOW()'];
+        $null_char = ['NULL', ''];
+        $zero_char = ['0'];
+
         // remove invalid column from conditions
         $conditions = filter_column($conditions, $master_column);
 
