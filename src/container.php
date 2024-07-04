@@ -124,18 +124,55 @@ $container['forbiddenHandler'] = function (Container $container) {
     };
 };
 
-
 /**
  * Error 404 Not Found
  * @param {Request} $req, {Response} $res, {string} $message
  * @return {object} $result
  */
 $container['notFoundHandler'] = function (Container $container) {
+    return function (Request $req, Response $res) use ($container) {
+        $result = [
+            'request_time' => $_SERVER['REQUEST_TIME'],
+            'status' => 404,
+            'error'=> 'Resource not found'
+        ];
+
+        return $res->withHeader('Content-type', 'application/json')->withJson($result, $result['status']);
+    };
+};
+
+/**
+ * Error 404 Not Found
+ * @param {Request} $req, {Response} $res, {string} $message
+ * @return {object} $result
+ */
+$container['notFoundDataHandler'] = function (Container $container) {
     return function (Request $req, Response $res, $message = '') use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
             'status' => 404,
-            'error'=> 'Not found'
+            'error'=> 'Data not found'
+        ];
+
+        if (!empty($message) && is_string($message)) {
+            $result['error'] .= ". {$message}";
+        }
+
+        return $res->withHeader('Content-type', 'application/json')->withJson($result, $result['status']);
+    };
+};
+
+/**
+ * Error 404 Not Found Data
+ * @param {Request} $req, {Response} $res, {string} $message
+ * @return {object} $result
+ */
+$container['notFoundDataHandler'] = function (Container $container) {
+    return function (Request $req, Response $res, $message = '') use ($container) {
+        $result = [
+            'request_time' => $_SERVER['REQUEST_TIME'],
+            'status' => 404,
+            'error'=> 'Data not found'
         ];
 
         if (!empty($message) && is_string($message)) {

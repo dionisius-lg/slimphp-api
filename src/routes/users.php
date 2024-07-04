@@ -14,35 +14,41 @@ $app->get("/{$path}", "\\{$controller}:getAll")
 $app->get("/{$path}/{id}", "\\{$controller}:getDetail")
     // auth token
     ->add($authenticate)
-    // validate request body
+    // validate request
     ->add($validation($schema::detail(), 'params'));
 
 $app->post("/{$path}", "\\{$controller}:insert")
     // auth token
     ->add($authenticate)
-    // validate request body
+    // validate request
     ->add($validation($schema::insert(), 'body'));
 
 $app->put("/{$path}/{id}", "\\{$controller}:update")
     // auth token
     ->add($authenticate)
-    // validate request body
+    // validate request
     ->add($validation($schema::update(), 'body'));
 
 $app->delete("/{$path}/{id}", "\\{$controller}:delete")
     // auth token
     ->add($authenticate)
-    // validate request body
+    // validate request
     ->add($validation($schema::detail(), 'params'));
 
 $app->post("/{$path}/many", "\\{$controller}:insertMany")
     // auth token
     ->add($authenticate)
-    // validate request body
+    // validate request
     ->add($validation($schema::insertMany(), 'body'));
 
 $app->post("/{$path}/many/update", "\\{$controller}:insertManyUpdate")
     // auth token
     ->add($authenticate)
-    // validate request body
+    // validate request
     ->add($validation($schema::insertManyUpdate(), 'body'));
+
+$app->post("/{$path}/{id}/photo", "\\{$controller}:insertPhoto")
+    // validate request
+    ->add($validation($schema::detail(), 'params'))
+    // auth token
+    ->add($authenticate);

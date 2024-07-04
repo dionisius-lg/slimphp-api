@@ -3,6 +3,10 @@
 use \Psr\Container\ContainerInterface as Container;
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
+use \Upload\Storage\FileSystem;
+use \Upload\File;
+use \Upload\Validation\Mimetype;
+use \Upload\Validation\Size;
 
 class UsersController extends Controller {
 
@@ -16,6 +20,8 @@ class UsersController extends Controller {
         $this->table_provinces = 'provinces';
         $this->table_cities = 'cities';
         $this->table_user_levels = 'user_levels';
+        $this->table_user_files = 'user_files';
+        $this->table_files = 'files';
     }
 
     /**
@@ -71,7 +77,7 @@ class UsersController extends Controller {
             return $handler($req, $res, $result);
         }
 
-        $handler = $this->cont->get('notFoundHandler');
+        $handler = $this->cont->get('notFoundDataHandler');
         return $handler($req, $res);
     }
 
@@ -104,7 +110,7 @@ class UsersController extends Controller {
             return $handler($req, $res, $result);
         }
 
-        $handler = $this->cont->get('notFoundHandler');
+        $handler = $this->cont->get('notFoundDataHandler');
         return $handler($req, $res);
     }
 
@@ -180,7 +186,7 @@ class UsersController extends Controller {
             $count = $this->dbCount($this->table, ['id' => $conditions['id']]);
 
             if ($count == 0) {
-                $handler = $this->cont->get('notFoundHandler');
+                $handler = $this->cont->get('notFoundDataHandler');
                 return $handler($req, $res);
             }
 
@@ -409,6 +415,131 @@ class UsersController extends Controller {
         $result = $this->dbInsertManyUpdate($this->table, $data, $protected);
 
         if ($result['total_data'] > 0) {
+            $handler = $this->cont->get('successCreatedHandler');
+            return $handler($req, $res, $result);
+        }
+
+        $handler = $this->cont->get('badRequestHandler');
+        return $handler($req, $res, $result['error'] ?: 'Invalid data');
+    }
+
+    /**
+     *  insert new file photo
+     *  @param {Request} $req, {Response} $res, {array} $args
+     *  @return {array} $handler
+     */
+    public function insertPhoto(Request $req, Response $res, $args) {
+        $decoded = $req->getAttribute('decoded');
+        $data = $req->getParsedBody();
+        $protected = ['id'];
+        $user_id = $args['id'];
+
+        $custom_conditions = $column_select = $column_deselect = [];
+        $custom_columns = [
+            "{$this->table_files}.filename",
+            "{$this->table_files}.path",
+            "{$this->table_files}.size",
+            "{$this->table_files}.mime",
+        ];
+        $join = [
+            "LEFT JOIN {$this->table_files} ON {$this->table_files}.id = {$this->table_user_files}.file_id"
+        ];
+
+        // check exist data
+        $user_file = $this->dbGetDetail(
+            $this->table_user_files,
+            ['user_id' => $user_id, 'name' => 'photo'],
+            $custom_conditions,
+            $column_select,
+            $column_deselect,
+            $custom_columns,
+            $join
+        );
+
+        $path = "{$this->conf['dir']['files']}/users/{$user_id}";
+        $path = preg_replace('/(\/+)/','/', $path);
+
+        // create directory if not exist
+        if (!is_dir($path)) {
+            mkdir($path, 0777, true);
+        }
+
+        $storage = new FileSystem($path, true);
+        $file = new File('file', $storage);
+        $filename = $file->getName();
+
+        if (strlen($filename > 200)) {
+            $filename = substr($filename, 0, 200);
+        }
+
+        $filename .= uniqid();
+        $file->setName($filename);
+
+        // validate file upload
+        // mimetype list => http://www.iana.org/assignments/media-types/media-types.xhtml
+        $file->addValidations([
+            // Ensure file is on mimetype validation
+            new Mimetype(['image/jpg', 'image/jpeg', 'image/png']),
+            // Ensure file is no larger than size validation (use "B", "K", M", or "G")
+            new Size('1M'),
+        ]);
+
+        // example data about the file that has been uploaded
+        // $file_data = [
+        //     'name' => $file->getNameWithExtension(),
+        //     'extension' => $file->getExtension(),
+        //     'mime' => $file->getMimetype(),
+        //     'size' => $file->getSize(),
+        //     'md5' => $file->getMd5(),
+        //     'dimensions' => $file->getDimensions()
+        // ];
+
+        $file_data = [
+            'filename' => $file->getNameWithExtension(),
+            'path' => $path,
+            'size' => $file->getSize(),
+            'mime' => $file->getMimeType(),
+        ];
+
+        try {
+            $file->upload();
+        } catch (\Exception $e) {
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, $e->getMessage());
+        }
+
+        $file_result = $this->dbInsert($this->table_files, $file_data, $protected);
+
+        // remove file that has been uploaded if data insert failed
+        if ($file_result['total_data'] == 0) {
+            if (file_exists("{$file_data['path']}/{$file_data['filename']}")) {
+                unlink("{$file_data['path']}/{$file_data['filename']}");
+            }
+
+            $handler = $this->cont->get('badRequestHandler');
+            return $handler($req, $res, $file_result['error'] ?: 'Invalid data');
+        }
+
+        if ($user_file['total_data'] > 0) {
+            // remove last user file if exist
+            if (file_exists("{$user_file['data']['path']}/{$user_file['data']['filename']}")) {
+                unlink("{$user_file['data']['path']}/{$user_file['data']['filename']}");
+            }
+
+            $this->dbDelete($this->table_files, ['id' => $user_file['data']['file_id']]);
+
+            $result = $this->dbUpdate($this->table_user_files, ['file_id' => $file_result['data']['id']], ['id' => $user_file['data']['id']]);
+        } else {
+            $result = $this->dbInsert($this->table_user_files, [
+                'name' => 'photo',
+                'user_id' => $user_id,
+                'file_id' => $file_result['data']['id'],
+                'created_by' => $decoded['id'] 
+            ]);
+        }
+
+        if ($result['total_data'] > 0) {
+            $result['data']['file_id'] = $file_result['data']['id'];
             $handler = $this->cont->get('successCreatedHandler');
             return $handler($req, $res, $result);
         }

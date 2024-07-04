@@ -59,7 +59,7 @@ class ProductsController extends Controller {
             return $handler($req, $res, $result);
         }
 
-        $handler = $this->cont->get('notFoundHandler');
+        $handler = $this->cont->get('notFoundDataHandler');
         return $handler($req, $res);
     }
 
@@ -87,7 +87,7 @@ class ProductsController extends Controller {
             return $handler($req, $res, $result);
         }
 
-        $handler = $this->cont->get('notFoundHandler');
+        $handler = $this->cont->get('notFoundDataHandler');
         return $handler($req, $res);
     }
 
@@ -149,7 +149,7 @@ class ProductsController extends Controller {
             $count = $this->dbCount($this->table, ['id' => $conditions['id']]);
 
             if ($count == 0) {
-                $handler = $this->cont->get('notFoundHandler');
+                $handler = $this->cont->get('notFoundDataHandler');
                 return $handler($req, $res);
             }
 
