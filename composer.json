@@ -3,8 +3,9 @@
     "require": {
         "slim/slim": "3.*",
         "paragonie/sodium_compat": "^1.20",
-        "firebase/php-jwt": "^6.0",
+        "firebase/php-jwt": "5.5.1",
         "justinrainbow/json-schema": "^5.2",
-        "vlucas/phpdotenv": "^4.3"
+        "vlucas/phpdotenv": "^4.3",
+        "codeguy/upload": "^1.3"
     }
 }
