@@ -1,8 +1,8 @@
 # SlimPHP API
 
-This application is built with [SlimPHP](https://www.slimframework.com) 3.x\
-A skeleton for creating applications with [SlimPHP](https://www.slimframework.com) 3.x\
-The framework source code can be found here: [slimphp/Slim](https://github.com/slimphp/Slim)
+This application is built with [slimphp](https://www.slimframework.com) 3.x\
+A skeleton for creating applications with [slimphp](https://www.slimframework.com) 3.x\
+The framework source code can be found here: [slimphp/slim](https://github.com/slimphp/Slim)
 
 ## Installation
 
