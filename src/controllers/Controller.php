@@ -48,7 +48,7 @@ class Controller {
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 array_push($column, $row['COLUMN_NAME']);
             }
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
         }
 
@@ -77,7 +77,7 @@ class Controller {
                     'is_nullable' => $row['IS_NULLABLE'],
                 ];
             }
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
         }
 
@@ -148,7 +148,7 @@ class Controller {
             $stmt->execute();
 
             $count = $stmt->fetchColumn();
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
         }
 
@@ -343,7 +343,7 @@ class Controller {
     
                 unset($result['error']);
             }
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
             $result['error'] = $error;
         }
@@ -466,7 +466,7 @@ class Controller {
 
                 unset($result['error']);
             }
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
             $result['error'] = $error;
         }
@@ -526,13 +526,11 @@ class Controller {
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
 
-            if ($stmt->rowCount()) {
-                $result['total_data'] = $stmt->rowCount();
-                $result['data']['id'] = $this->conn->lastInsertId();
+            $result['total_data'] = $stmt->rowCount();
+            $result['data']['id'] = $this->conn->lastInsertId();
 
-                unset($result['error']);
-            }
-        } catch (PDOException $e) {
+            unset($result['error']);
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
             $result['error'] = $error;
         }
@@ -622,13 +620,11 @@ class Controller {
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
 
-            if ($stmt->rowCount()) {
-                $result['total_data'] = $stmt->rowCount();
-                $result['data'] = $conditions;
+            $result['total_data'] = $stmt->rowCount() ?: 1;
+            $result['data'] = $conditions;
 
-                unset($result['error']);
-            }
-        } catch (PDOException $e) {
+            unset($result['error']);
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
             $result['error'] = $error;
         }
@@ -692,18 +688,16 @@ class Controller {
         try {
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
-    
-            if ($stmt->rowCount()) {
-                $result['total_data'] = $stmt->rowCount();
-                $result['data'] = $conditions;
-    
-                unset($result['error']);
-            }
-        } catch (PDOException $e) {
+
+            $result['total_data'] = $stmt->rowCount() ?: 1;
+            $result['data'] = $conditions;
+
+            unset($result['error']);
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
             $result['error'] = $error;
         }
-    
+
         return $result;
     }
 
@@ -780,21 +774,19 @@ class Controller {
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
 
-            if ($stmt->rowCount()) {
-                $total_data = $stmt->rowCount();
-                $last_id = $this->conn->lastInsertId();
-                $inserted = [];
+            $total_data = $stmt->rowCount();
+            $last_id = $this->conn->lastInsertId();
+            $inserted = [];
 
-                for ($id = $last_id; $id < ($total_data + $last_id); $id++) {
-                    array_push($inserted, ['id' => (string) $id]);
-                }
-
-                $result['total_data'] = $total_data;
-                $result['data'] = $inserted;
-
-                unset($result['error']);
+            for ($id = $last_id; $id < ($total_data + $last_id); $id++) {
+                array_push($inserted, ['id' => (string) $id]);
             }
-        } catch (PDOException $e) {
+
+            $result['total_data'] = $total_data;
+            $result['data'] = $inserted;
+
+            unset($result['error']);
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
             $result['error'] = $error;
         }
@@ -906,13 +898,11 @@ class Controller {
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
 
-            if ($stmt->rowCount()) {
-                $result['total_data'] = $stmt->rowCount();
-                $result['data'] = $data;
+            $result['total_data'] = $stmt->rowCount() ?: count($data);
+            $result['data'] = $data;
 
-                unset($result['error']);
-            }
-        } catch (PDOException $e) {
+            unset($result['error']);
+        } catch (\PDOException $e) {
             $error = $e->getMessage();
             $result['error'] = $error;
         }
