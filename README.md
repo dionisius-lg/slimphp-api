@@ -7,7 +7,7 @@ The framework source code can be found here: [slimphp/slim](https://github.com/s
 ## Installation
 
 1. Git clone or pull this source
-2. Download [Composer](http://getcomposer.org/doc/00-intro.md) or update `composer self-update`
+2. Download [composer](http://getcomposer.org/doc/00-intro.md) or update `composer self-update`
 3. Run `composer update` inside application root directory
 
 ## Configuration
