@@ -33,7 +33,7 @@ $authenticate = function (Request $req, Response $res, callable $next) use ($con
             $req = $req->withAttribute('decoded', $decoded['data']);
 
             return $next($req, $res);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $error = $e->getMessage();
             $handler = $container['unauthorizedHandler'];
             return $handler($req, $res);
@@ -71,7 +71,7 @@ $authenticate_refresh = function (Request $req, Response $res, callable $next) u
             $req = $req->withAttribute('decoded', $decoded['data']);
 
             return $next($req, $res);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $error = $e->getMessage();
             $handler = $container['unauthorizedHandler'];
             return $handler($req, $res);
@@ -215,8 +215,8 @@ $validation = function ($schema = [], $property = '') use ($config, $container) 
             }
 
             return $next($req, $res);
-        } catch (Exception $e) {
-            $error = $e->getmessage();
+        } catch (\Exception $e) {
+            $error = $e->getMessage();
             $handler = $container['badRequestHandler'];
             return $handler($req, $res, $error);
         }

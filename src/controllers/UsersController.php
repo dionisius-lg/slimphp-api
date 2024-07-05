@@ -508,7 +508,19 @@ class UsersController extends Controller {
             return $handler($req, $res, $e->getMessage());
         }
 
-        $file_result = $this->dbInsert($this->table_files, $file_data, $protected);
+        switch (true) {
+            case ($user_file['total_data'] > 0):
+                // remove last user file if exist
+                if (file_exists("{$user_file['data']['path']}/{$user_file['data']['filename']}")) {
+                    unlink("{$user_file['data']['path']}/{$user_file['data']['filename']}");
+                }
+
+                $file_result = $this->dbUpdate($this->table_files, $file_data, ['id' =>  $user_file['data']['file_id']]);
+                break;
+            default:
+                $file_result = $this->dbInsert($this->table_files, $file_data, $protected);
+                break;
+        }
 
         // remove file that has been uploaded if data insert failed
         if ($file_result['total_data'] == 0) {
@@ -520,22 +532,20 @@ class UsersController extends Controller {
             return $handler($req, $res, $file_result['error'] ?: 'Invalid data');
         }
 
-        if ($user_file['total_data'] > 0) {
-            // remove last user file if exist
-            if (file_exists("{$user_file['data']['path']}/{$user_file['data']['filename']}")) {
-                unlink("{$user_file['data']['path']}/{$user_file['data']['filename']}");
-            }
-
-            $this->dbDelete($this->table_files, ['id' => $user_file['data']['file_id']]);
-
-            $result = $this->dbUpdate($this->table_user_files, ['file_id' => $file_result['data']['id']], ['id' => $user_file['data']['id']]);
-        } else {
-            $result = $this->dbInsert($this->table_user_files, [
-                'name' => 'photo',
-                'user_id' => $user_id,
-                'file_id' => $file_result['data']['id'],
-                'created_by' => $decoded['id'] 
-            ]);
+        switch (true) {
+            case ($user_file['total_data'] > 0):
+                $result = $this->dbUpdate($this->table_user_files, [
+                    'file_id' => $file_result['data']['id']
+                ], ['id' => $user_file['data']['id']]);
+                break;
+            default:
+                $result = $this->dbInsert($this->table_user_files, [
+                    'name' => 'photo',
+                    'user_id' => $user_id,
+                    'file_id' => $file_result['data']['id'],
+                    'created_by' => $decoded['id'] 
+                ]);
+                break;
         }
 
         if ($result['total_data'] > 0) {

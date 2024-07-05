@@ -9,5 +9,8 @@ vendor/*
 # logs
 logs/*
 
+# files
+files/*
+
 # misc
 composer.lock

@@ -408,7 +408,7 @@ if (!function_exists('file_read')) {
             }
 
             throw new Exception(false);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return false;
         }
     }
@@ -457,7 +457,7 @@ if (!function_exists('file_write')) {
             }
 
             throw new Exception(false);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return false;
         }
     }
@@ -500,7 +500,7 @@ if (!function_exists('file_remove')) {
             }
 
             throw new Exception(false);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return false;
         }
     }

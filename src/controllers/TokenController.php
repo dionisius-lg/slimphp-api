@@ -166,7 +166,7 @@ class TokenController extends Controller {
         try {
             $token_decoded = Jwt::decode($token, new Key($this->conf['jwt']['key'], $this->conf['jwt']['algorithm']));
             $token_decoded = object2array($token_decoded);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $error = $e->getMessage();
 
             if ($error == 'Expired token') {
