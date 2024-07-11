@@ -432,31 +432,24 @@ class UsersController extends Controller {
         $decoded = $req->getAttribute('decoded');
         $data = $req->getParsedBody();
         $protected = ['id'];
-        $user_id = $args['id'];
+        $conditions = ['name' => 'photo', 'user_id' => $args['id']];
+        $custom_conditions = $column_select = $column_deselect = $custom_columns = $join = [];
 
-        $custom_conditions = $column_select = $column_deselect = [];
-        $custom_columns = [
+        array_push($custom_columns,
             "{$this->table_files}.filename",
             "{$this->table_files}.path",
             "{$this->table_files}.size",
-            "{$this->table_files}.mime",
-        ];
-        $join = [
-            "LEFT JOIN {$this->table_files} ON {$this->table_files}.id = {$this->table_user_files}.file_id"
-        ];
-
-        // check exist data
-        $user_file = $this->dbGetDetail(
-            $this->table_user_files,
-            ['user_id' => $user_id, 'name' => 'photo'],
-            $custom_conditions,
-            $column_select,
-            $column_deselect,
-            $custom_columns,
-            $join
+            "{$this->table_files}.mime"
         );
 
-        $path = "{$this->conf['dir']['files']}/users/{$user_id}";
+        array_push($join,
+            "LEFT JOIN {$this->table_files} ON {$this->table_files}.id = {$this->table_user_files}.file_id"
+        );
+
+        // check exist data
+        $user_file = $this->dbGetDetail($this->table_user_files, $conditions, $custom_conditions, $column_select, $column_deselect, $custom_columns, $join);
+
+        $path = "{$this->conf['dir']['files']}/users/{$conditions['user_id']}";
         $path = preg_replace('/(\/+)/','/', $path);
 
         // create directory if not exist
@@ -539,12 +532,10 @@ class UsersController extends Controller {
                 ], ['id' => $user_file['data']['id']]);
                 break;
             default:
-                $result = $this->dbInsert($this->table_user_files, [
-                    'name' => 'photo',
-                    'user_id' => $user_id,
+                $result = $this->dbInsert($this->table_user_files, array_merge($conditions, [
                     'file_id' => $file_result['data']['id'],
-                    'created_by' => $decoded['id'] 
-                ]);
+                    'created_by' => $decoded['id']
+                ]));
                 break;
         }
 
@@ -556,6 +547,58 @@ class UsersController extends Controller {
 
         $handler = $this->cont->get('badRequestHandler');
         return $handler($req, $res, $result['error'] ?: 'Invalid data');
+    }
+
+    /**
+     *  get detail data by given arguments
+     *  @param {Request} $req, {Response} $res, {array} $args
+     *  @return {array} $handler
+     */
+    public function getPhoto(Request $req, Response $res, $args) {
+        $protocol = $req->getUri()->getScheme();
+        $hostname = $req->getUri()->getHost();
+
+        $decoded = $req->getAttribute('decoded');
+        $protected = ['id'];
+        $conditions = ['name' => 'photo', 'user_id' => $args['id']];
+        $custom_conditions = $column_select = $column_deselect = $custom_columns = $join = [];
+
+        array_push($custom_columns,
+            "{$this->table_files}.filename",
+            "{$this->table_files}.path",
+            "{$this->table_files}.size",
+            "{$this->table_files}.mime"
+        );
+
+        array_push($join,
+            "LEFT JOIN {$this->table_files} ON {$this->table_files}.id = {$this->table_user_files}.file_id"
+        );
+
+        // check exist data
+        $result = $this->dbGetDetail($this->table_user_files, $conditions, $custom_conditions, $column_select, $column_deselect, $custom_columns, $join);
+
+        if ($result['total_data'] > 0) {
+            $file_data = [
+                'filename' => $result['data']['filename'],
+                'path' => $result['data']['path'],
+                'size' => $result['data']['size'],
+                'mime' => $result['data']['mime'],
+            ];
+
+            $result['data']['link'] = null;
+
+            if (file_exists("{$file_data['path']}/{$file_data['filename']}")) {
+                $encrypted = encrypt(json_encode($file_data));
+                $link = "{$protocol}://{$hostname}/files/{$encrypted}";
+                $result['data']['link'] = $link;
+            }
+
+            $handler = $this->cont->get('successHandler');
+            return $handler($req, $res, $result);
+        }
+
+        $handler = $this->cont->get('notFoundDataHandler');
+        return $handler($req, $res);
     }
 
 }

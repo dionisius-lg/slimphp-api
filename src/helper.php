@@ -242,7 +242,7 @@ if (!function_exists('safe_base64_encode')) {
 if (!function_exists('safe_base64_decode')) {
     function safe_base64_decode($value) {
         if (is_string($value)) {
-            $str  = str_replace(['-', '_'], ['+', '/'], $str);
+            $str  = str_replace(['-', '_'], ['+', '/'], $value);
             $mod4 = strlen($str) % 4;
 
             if ($mod4) {
@@ -259,46 +259,50 @@ if (!function_exists('safe_base64_decode')) {
 }
 
 /**
- *  encode using mcyrpt
- *  @param {string} $value, {string} $key
+ *  encrypt using openssl_encrypt
+ *  @param {string} $value
  *  @return {string} $encoded
  */
-if (!function_exists('encode')) {
-    function encode($value) {
+if (!function_exists('encrypt')) {
+    function encrypt($value) {
         if (!empty($value) && is_string($value)) {
             global $container;
 
-            $iv_size   = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
-            $iv        = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-            $encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $container['secret_key'], $value, MCRYPT_MODE_ECB, $iv);
-            $encoded   = safe_base64_encode($encrypted);
+            $cipher = 'aes-256-cbc';
+            $key = $container['secret_key'];
+            $options = 0;
+            $iv = 'initVector16Bits';
+            $encrypted = openssl_encrypt($value, $cipher, $key, $options, $iv);
+            $encoded = safe_base64_encode($encrypted);
 
-            return trim($encoded);
+            return $encoded;
         }
-        
+
         return null;
     }
 }
 
 /**
- *  decode using mcyrpt
- *  @param {string} $val, {string} $key
+ *  decrypt using openssl_encrypt
+ *  @param {string} $value
  *  @return {string} $decode
  */
-if (!function_exists('decode')) {
-    function decode($value) {
-        if (!empty($value) && is_string($value)) {
-            global $container;
+if (!function_exists('decrypt')) {
+    function decrypt($value) {
+        global $container;
 
-            $encrypted = safe_base64_decode($value);
-            $iv_size   = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
-            $iv        = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-            $decoded   = mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $container['secret_key'], $value, MCRYPT_MODE_ECB, $iv);
+        try {
+            $cipher = 'aes-256-cbc';
+            $key = $container['secret_key'];
+            $options = 0;
+            $iv = 'initVector16Bits';
+            $decoded = safe_base64_decode($value);
+            $decrypted = openssl_decrypt($decoded, $cipher, $key, $options, $iv);
 
-            return trim($decoded);
+            return $decrypted;
+        } catch (\Exception $e) {
+            return $e->getMessage;
         }
-
-        return null;
     }
 }
 
@@ -311,7 +315,7 @@ if (!function_exists('format_date_object')) {
     function format_date_object($value) {
         if (!empty($value) && is_string($value)) {
             $format = DateTime::createFromFormat('Y-m-d', $value);
-			$errors = DateTime::getLastErrors();
+            $errors = DateTime::getLastErrors();
 
             if ($errors['warning_count'] === 0 && $errors['error_count'] === 0) {
                 return $format;
@@ -331,7 +335,7 @@ if (!function_exists('format_datetime_object')) {
     function format_datetime_object($value) {
         if (!empty($value) && is_string($value)) {
             $format = DateTime::createFromFormat('Y-m-d H:i:s', $value);
-			$errors = DateTime::getLastErrors();
+            $errors = DateTime::getLastErrors();
 
             if ($errors['warning_count'] === 0 && $errors['error_count'] === 0) {
                 // return object2array($format);
@@ -465,8 +469,8 @@ if (!function_exists('file_write')) {
 
 /**
  *  remove file
- *  @param string $filename
- *  @return boolean
+ *  @param {string} $filename
+ *  @return {bool}
  */
 if (!function_exists('file_remove')) {
     function file_remove($filename, $folder = null) {
@@ -674,5 +678,24 @@ if (!function_exists('mask_data')) {
         }
 
         return $data;
+    }
+}
+
+/**
+ *  check domain address
+ *  @param {string} $value
+ *  @return {bool}
+ */
+if (!function_exists('is_domain')) {
+    function is_domain($value) {
+        // Regular expression to match IP address in the form of x.x.x.x
+        $ip_pattern = '/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/';
+
+        // Check if the value matches the IP pattern or contains 'localhost'
+        if (preg_match($ip_pattern, $value) || strpos($value, 'localhost') !== false) {
+            return false;
+        }
+
+        return true;
     }
 }
