@@ -242,7 +242,7 @@ if (!function_exists('safe_base64_encode')) {
 if (!function_exists('safe_base64_decode')) {
     function safe_base64_decode($value) {
         if (is_string($value)) {
-            $str  = str_replace(['-', '_'], ['+', '/'], $value);
+            $str = str_replace(['-', '_'], ['+', '/'], $value);
             $mod4 = strlen($str) % 4;
 
             if ($mod4) {
@@ -265,9 +265,9 @@ if (!function_exists('safe_base64_decode')) {
  */
 if (!function_exists('encrypt')) {
     function encrypt($value) {
-        if (!empty($value) && is_string($value)) {
-            global $container;
+        global $container;
 
+        try {
             $cipher = 'aes-256-cbc';
             $key = $container['secret_key'];
             $options = 0;
@@ -276,9 +276,9 @@ if (!function_exists('encrypt')) {
             $encoded = safe_base64_encode($encrypted);
 
             return $encoded;
+        } catch (\Exception $e) {
+            return null;
         }
-
-        return null;
     }
 }
 
@@ -301,7 +301,7 @@ if (!function_exists('decrypt')) {
 
             return $decrypted;
         } catch (\Exception $e) {
-            return $e->getMessage;
+            return null;
         }
     }
 }
