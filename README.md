@@ -12,4 +12,4 @@ The framework source code can be found here: [slimphp/slim](https://github.com/s
 
 ## Configuration
 
-Rename `.env.example` to `.env`, then setup the 'datasources' for your application
+Copy `.env.example` to `.env`, then setup the datasources for your application

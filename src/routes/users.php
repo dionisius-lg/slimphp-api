@@ -47,8 +47,14 @@ $app->post("/{$path}/many/update", "\\{$controller}:insertManyUpdate")
     // validate request
     ->add($validation($schema::insertManyUpdate(), 'body'));
 
-$app->post("/{$path}/{id}/photo", "\\{$controller}:insertPhoto")
-    // validate request
-    ->add($validation($schema::detail(), 'params'))
+$app->get("/{$path}/{id}/photo", "\\{$controller}:getPhoto")
     // auth token
-    ->add($authenticate);
+    ->add($authenticate)
+    // validate request
+    ->add($validation($schema::detail(), 'params'));
+
+$app->post("/{$path}/{id}/photo", "\\{$controller}:insertPhoto")
+    // auth token
+    ->add($authenticate)
+    // validate request
+    ->add($validation($schema::detail(), 'params'));
