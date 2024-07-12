@@ -40,7 +40,7 @@ $authenticate = function (Request $req, Response $res, callable $next) use ($con
         }
     }
 
-    $handler = $container['unauthorizedHandler'];
+    $handler = $container['forbiddenHandler'];
     return $handler($req, $res);
 };
 
@@ -78,7 +78,7 @@ $authenticate_refresh = function (Request $req, Response $res, callable $next) u
         }
     }
 
-    $handler = $container['unauthorizedHandler'];
+    $handler = $container['forbiddenHandler'];
     return $handler($req, $res);
 };
 

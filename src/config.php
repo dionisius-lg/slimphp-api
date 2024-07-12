@@ -24,6 +24,9 @@ return [
     'secret_key' => 'mY5uP3rsEcR3tKEy',
     'dir' => [
         'logs' => __DIR__ . '/../logs',
-        'files' =>getenv('DIR_FILE') ?: __DIR__ . '/../files',
+        'files' => getenv('DIR_FILEs') ?: __DIR__ . '/../files',
+    ],
+    'url' => [
+        'files' => getenv('URL_FILES') ?: 'http://localhost/slimphp-api/files',
     ]
 ];

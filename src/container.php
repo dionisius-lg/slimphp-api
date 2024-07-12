@@ -4,6 +4,8 @@ use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 use \Psr\Container\ContainerInterface as Container;
 
+$container = $app->getContainer();
+
 /**
  * Success 200 OK
  * @param {Request} $req, {Response} $res, {array} $data
@@ -74,7 +76,7 @@ $container['badRequestHandler'] = function (Container $container) {
         ];
 
         if (!empty($message) && is_string($message)) {
-            $result['error'] .= ". {$message}";
+            $result['error'] = $message;
         }
 
         return $res->withHeader('Content-type', 'application/json')->withJson($result, $result['status']);
@@ -95,7 +97,7 @@ $container['unauthorizedHandler'] = function (Container $container) {
         ];
 
         if (!empty($message) && is_string($message)) {
-            $result['error'] .= ". {$message}";
+            $result['error'] = $message;
         }
 
         return $res->withHeader('Content-type', 'application/json')->withJson($result, $result['status']);
@@ -109,16 +111,12 @@ $container['unauthorizedHandler'] = function (Container $container) {
  * @return {object} $result
  */
 $container['forbiddenHandler'] = function (Container $container) {
-    return function (Request $req, Response $res, $message = '') use ($container) {
+    return function (Request $req, Response $res) use ($container) {
         $result = [
             'request_time' => $_SERVER['REQUEST_TIME'],
             'status' => 403,
-            'error' => 'Forbidden'
+            'error' => 'Access forbidden'
         ];
-
-        if (!empty($message) && is_string($message)) {
-            $result['error'] .= ". {$message}";
-        }
 
         return $res->withHeader('Content-type', 'application/json')->withJson($result, $result['status']);
     };
@@ -142,27 +140,6 @@ $container['notFoundHandler'] = function (Container $container) {
 };
 
 /**
- * Error 404 Not Found
- * @param {Request} $req, {Response} $res, {string} $message
- * @return {object} $result
- */
-$container['notFoundDataHandler'] = function (Container $container) {
-    return function (Request $req, Response $res, $message = '') use ($container) {
-        $result = [
-            'request_time' => $_SERVER['REQUEST_TIME'],
-            'status' => 404,
-            'error'=> 'Data not found'
-        ];
-
-        if (!empty($message) && is_string($message)) {
-            $result['error'] .= ". {$message}";
-        }
-
-        return $res->withHeader('Content-type', 'application/json')->withJson($result, $result['status']);
-    };
-};
-
-/**
  * Error 404 Not Found Data
  * @param {Request} $req, {Response} $res, {string} $message
  * @return {object} $result
@@ -176,7 +153,7 @@ $container['notFoundDataHandler'] = function (Container $container) {
         ];
 
         if (!empty($message) && is_string($message)) {
-            $result['error'] .= ". {$message}";
+            $result['error'] = $message;
         }
 
         return $res->withHeader('Content-type', 'application/json')->withJson($result, $result['status']);
