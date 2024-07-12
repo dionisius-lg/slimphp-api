@@ -19,3 +19,9 @@ foreach ($files as $file) {
         require_once dirname(__FILE__) . '/' . $filename . '.php';
     }
 }
+
+// catch-all route for 404 not found
+$app->any('/{routes:.+}', function (Request $req, Response $res, $exception) use ($app) {
+    $handler = $app->getContainer()->notFoundHandler;
+    return $handler($req, $res);
+});

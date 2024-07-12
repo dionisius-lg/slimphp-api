@@ -555,9 +555,6 @@ class UsersController extends Controller {
      *  @return {array} $handler
      */
     public function getPhoto(Request $req, Response $res, $args) {
-        $protocol = $req->getUri()->getScheme();
-        $hostname = $req->getUri()->getHost();
-
         $decoded = $req->getAttribute('decoded');
         $protected = ['id'];
         $conditions = ['name' => 'photo', 'user_id' => $args['id']];
@@ -589,8 +586,7 @@ class UsersController extends Controller {
 
             if (file_exists("{$file_data['path']}/{$file_data['filename']}")) {
                 $encrypted = encrypt(json_encode($file_data));
-                $link = "{$protocol}://{$hostname}/files/{$encrypted}";
-                $result['data']['link'] = $link;
+                $result['data']['link'] = "{$this->conf['url']['files']}/{$encrypted}";
             }
 
             $handler = $this->cont->get('successHandler');
