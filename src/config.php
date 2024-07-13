@@ -7,6 +7,7 @@ return [
         'determineRouteBeforeAppMiddleware' => true, // allow middleware determine route
     ],
     'database' => [
+        'adapter' => getenv('DB_ADAPTER') ?: 'mysql',
         'host' => getenv('DB_HOST') ?: 'localhost',
         'port' => getenv('DB_PORT') ?: '3306',
         'username' => getenv('DB_USERNAME') ?: 'root',
