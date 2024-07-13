@@ -450,7 +450,8 @@ if (!function_exists('file_write')) {
                     $path = preg_replace('/(\/+)/','/', $path);
 
                     if (!is_dir($path)) {
-                        mkdir($path, 0777);
+                        // create directory with 777 permissions and recursive flag
+                        mkdir($path, 0777, true);
                     }
 
                     if (is_array($content)) {
@@ -647,7 +648,8 @@ if (!function_exists('access_log')) {
         $log_dir = rtrim($container['dir']['logs'], '/') . '/';
 
         if (!is_dir($log_dir)) {
-            mkdir($log_dir, 0777);
+            // create directory with 777 permissions and recursive flag
+            mkdir($log_dir, 0777, true);
         }
 
         $log_path = $log_dir . 'access-' . date('Ymd') . '.log';
