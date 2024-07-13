@@ -24,7 +24,7 @@ class Controller {
      */
     private function dbConnect() {
         $data = $this->conf['database'];
-        $conn = new PDO("mysql:host={$data['host']};port={$data['port']};dbname={$data['name']};charset=utf8", $data['username'], $data['password']);
+        $conn = new PDO("{$data['adapter']}:host={$data['host']};port={$data['port']};dbname={$data['name']};charset=utf8", $data['username'], $data['password']);
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         return $conn;

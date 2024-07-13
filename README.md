@@ -13,3 +13,8 @@ The framework source code can be found here: [slimphp/slim](https://github.com/s
 ## Configuration
 
 Copy `.env.example` to `.env`, then setup the datasources for your application
+
+## Database Migrations
+
+1. Run Migrations `vendor/bin/phinx migrate`
+2. Run Seeds `vendor/bin/phinx seed:run`

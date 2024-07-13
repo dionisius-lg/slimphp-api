@@ -101,14 +101,6 @@ class CitiesController extends Controller {
         $data = $req->getParsedBody();
         $protected = ['id'];
 
-        // check available name
-        $count = $this->dbCount($this->table, ['name' => $data['name']]);
-
-        if ($count > 0) {
-            $handler = $this->cont->get('badRequestHandler');
-            return $handler($req, $res, 'Name already exist');
-        }
-
         if (!array_key_exists('created', $data)) {
             $data['created'] = date('Y-m-d H:i:s');
         }
@@ -151,16 +143,6 @@ class CitiesController extends Controller {
             if ($count == 0) {
                 $handler = $this->cont->get('notFoundDataHandler');
                 return $handler($req, $res);
-            }
-
-            if (array_key_exists('name', $data)) {
-                // check available name
-                $count = $this->dbCount($this->table, [], ["name {$data['name']}", "id <> {$conditions['id']}"]);
-    
-                if ($count > 0) {
-                    $handler = $this->cont->get('badRequestHandler');
-                    return $handler($req, $res, 'Name already exist');
-                }
             }
         }
 
@@ -230,20 +212,8 @@ class CitiesController extends Controller {
         }
 
         $data = [];
-        $names = [];
 
         for ($i = 0; $i < count($body); $i++) {
-            if (array_key_exists('name', $body[$i]) && !empty($body[$i]['name'])) {
-                // check available name
-                $count = $this->dbCount($this->table, ['name' => $body[$i]['name']]);
-
-                if ($count > 0 || in_array($body[$i]['name'], $names)) {
-                    continue;
-                }
-
-                array_push($names, $body[$i]['name']);
-            }
-
             if (!array_key_exists('created', $body[$i])) {
                 $body[$i]['created'] = date('Y-m-d H:i:s');
             }
@@ -297,22 +267,8 @@ class CitiesController extends Controller {
         }
 
         $data = [];
-        $names = [];
 
         for ($i = 0; $i < count($body); $i++) {
-            if (array_key_exists($unique_key, $body[$i])) {
-                if (array_key_exists('name', $body[$i]) && !empty($body[$i]['name'])) {
-                    // check available name
-                    $count = $this->dbCount($this->table, ['name' => $body[$i]['name']], ["{$this->table}.{$unique_key} <> {$body[$i][$unique_key]}"]);
-
-                    if ($count > 0 || in_array($body[$i]['name'], $names)) {
-                        continue;
-                    }
-
-                    array_push($names, $body[$i]['name']);
-                }
-            }
-
             if (!array_key_exists('created', $body[$i])) {
                 $body[$i]['created'] = date('Y-m-d H:i:s');
             }
