@@ -11,8 +11,8 @@ $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
 // define paths
-$migrations_path = __DIR__ . '/db/migrations';
-$seeds_path = __DIR__ . '/db/seeds';
+$migrations_path = __DIR__ . '/database/migrations';
+$seeds_path = __DIR__ . '/database/seeds';
 
 // function to create a directory if it doesn't exist
 function check_dir($path) {
@@ -31,7 +31,8 @@ return [
         'seeds' => $seeds_path,
     ],
     'environments' => [
-        'default_database' => 'development',
+        'default_migration_table' => 'migrations',
+        'default_environment' => 'development',
         'development' => [
             'adapter' => getenv('DB_ADAPTER') ?: 'mysql',
             'host' => getenv('DB_HOST') ?: 'localhost',
