@@ -34,12 +34,19 @@ class UsersController extends Controller {
         $custom_conditions = $column_select = $column_deselect = $custom_columns = $join = $group_by = $custom_orders = [];
 
         array_push($column_deselect, 'password');
-        array_push($custom_columns, "{$this->table_provinces}.name AS province");
-        array_push($custom_columns, "{$this->table_cities}.name AS city");
-        array_push($custom_columns, "{$this->table_user_levels}.name AS user_level");
-        array_push($join, "LEFT JOIN {$this->table_provinces} ON {$this->table_provinces}.id = {$this->table}.province_id");
-        array_push($join, "LEFT JOIN {$this->table_cities} ON {$this->table_cities}.id = {$this->table}.city_id");
-        array_push($join, "LEFT JOIN {$this->table_user_levels} ON {$this->table_user_levels}.id = {$this->table}.user_level_id");
+
+        array_push($custom_columns,
+            "{$this->table_provinces}.name AS province",
+            "{$this->table_cities}.name AS city",
+            "{$this->table_user_levels}.name AS user_level"
+        );
+
+        array_push($join,
+            "LEFT JOIN {$this->table_provinces} ON {$this->table_provinces}.id = {$this->table}.province_id",
+            "LEFT JOIN {$this->table_cities} ON {$this->table_cities}.id = {$this->table}.city_id",
+            "LEFT JOIN {$this->table_user_levels} ON {$this->table_user_levels}.id = {$this->table}.user_level_id"
+        );
+
         array_push($group_by, "{$this->table}.id");
 
         if (array_key_exists('start', $conditions)) {
@@ -96,12 +103,18 @@ class UsersController extends Controller {
         }
 
         array_push($column_deselect, 'password');
-        array_push($custom_columns, "{$this->table_provinces}.name AS province");
-        array_push($custom_columns, "{$this->table_cities}.name AS city");
-        array_push($custom_columns, "{$this->table_user_levels}.name AS user_level");
-        array_push($join, "LEFT JOIN {$this->table_provinces} ON {$this->table_provinces}.id = {$this->table}.province_id");
-        array_push($join, "LEFT JOIN {$this->table_cities} ON {$this->table_cities}.id = {$this->table}.city_id");
-        array_push($join, "LEFT JOIN {$this->table_user_levels} ON {$this->table_user_levels}.id = {$this->table}.user_level_id");
+
+        array_push($custom_columns,
+            "{$this->table_provinces}.name AS province",
+            "{$this->table_cities}.name AS city",
+            "{$this->table_user_levels}.name AS user_level"
+        );
+
+        array_push($join,
+            "LEFT JOIN {$this->table_provinces} ON {$this->table_provinces}.id = {$this->table}.province_id",
+            "LEFT JOIN {$this->table_cities} ON {$this->table_cities}.id = {$this->table}.city_id",
+            "LEFT JOIN {$this->table_user_levels} ON {$this->table_user_levels}.id = {$this->table}.user_level_id"
+        );
 
         $result = $this->dbGetDetail($this->table, $conditions, $custom_conditions, $column_select, $column_deselect, $custom_columns, $join);
 
