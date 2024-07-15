@@ -1,7 +1,6 @@
 <?php
 
 ini_set('date.timezone', 'Asia/Jakarta');
-set_time_limit(120); // 2 minutes
 
 // load vendor
 require __DIR__ . '/vendor/autoload.php';

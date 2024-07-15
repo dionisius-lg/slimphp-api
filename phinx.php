@@ -1,5 +1,7 @@
 <?php
 
+// See https://hrportal.readthedocs.io/en/latest/index.html for more about documentation.
+
 // load vendor
 require __DIR__ . '/vendor/autoload.php';
 
@@ -10,29 +12,26 @@ use \Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
-// define paths
-$migrations_path = __DIR__ . '/database/migrations';
-$seeds_path = __DIR__ . '/database/seeds';
+$paths = [
+    'migrations' => __DIR__ . '/db/migrations',
+    'seeds' => __DIR__ . '/db/seeds'
+];
 
-// function to create a directory if it doesn't exist
-function check_dir($path) {
+foreach($paths as $path) {
     if (!is_dir($path)) {
         // create directory with 777 permissions and recursive flag
         mkdir($path, 0777, true);
     }
 }
 
-check_dir($migrations_path);
-check_dir($seeds_path);
-
 return [
     'paths' => [
-        'migrations' => $migrations_path,
-        'seeds' => $seeds_path,
+        'migrations' => $paths['migrations'],
+        'seeds' => $paths['seeds'],
     ],
     'environments' => [
         'default_migration_table' => 'migrations',
-        'default_environment' => 'development',
+        'default_database' => 'development',
         'development' => [
             'adapter' => getenv('DB_ADAPTER') ?: 'mysql',
             'host' => getenv('DB_HOST') ?: 'localhost',
